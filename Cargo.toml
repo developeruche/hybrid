@@ -2,7 +2,7 @@
 members = [ "bins/cargo-hybrid", "bins/dev-node","bins/node", "crates/compile", "crates/vm"]
 
 
-exclude = ["contracts/*"]
+exclude = ["contracts/*", "examples/*"]
 
 [workspace.dependencies]
 tracing = "0.1"

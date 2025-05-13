@@ -2,72 +2,37 @@
 #![no_main]
 
 use core::default::Default;
-
 use contract_derive::{contract, payable, storage, Event, Error};
 use eth_riscv_runtime::types::*;
-
 use alloy_core::primitives::{Address, U256};
-
 extern crate alloc;
 
 // -- EVENTS -------------------------------------------------------------------
 #[derive(Event)]
-pub struct Transfer {
-    #[indexed]
-    pub from: Address,
-    #[indexed]
-    pub to: Address,
-    pub amount: U256,
+pub struct StarageSet {
+    pub storage_item: U256,
 }
 
-#[derive(Event)]
-pub struct Approval {
-    #[indexed]
-    pub owner: Address,
-    #[indexed]
-    pub spender: Address,
-    pub amount: U256,
-}
 
-#[derive(Event)]
-pub struct OwnershipTransferred {
-    #[indexed]
-    pub from: Address,
-    #[indexed]
-    pub to: Address,
-}
 
 // -- ERRORS -------------------------------------------------------------------
 #[derive(Error)]
-pub enum ERC20Error {
-    OnlyOwner,
-    InsufficientBalance(U256),
-    InsufficientAllowance(U256),
-    SelfApproval,
-    SelfTransfer,
-    ZeroAmount,
-    ZeroAddress,
+pub enum StorageError {
+    FailedToSetStorage
 }
 
 // -- CONTRACT -----------------------------------------------------------------
 #[storage]
-pub struct ERC20 {
-    total_supply: Slot<U256>,
-    balance_of: Mapping<Address, Slot<U256>>,
-    allowance_of: Mapping<Address, Mapping<Address, Slot<U256>>>,
-    owner: Slot<Address>,
-    // TODO: handle string storage
-    // name: String, 
-    // symbol: String,
-    // decimals: u8,
+pub struct Storage {
+    storage_item: Slot<U256>,
 }
 
 #[contract]
-impl ERC20 {
+impl Storage {
     // -- CONSTRUCTOR ----------------------------------------------------------
-    pub fn new(owner: Address) -> Self {
+    pub fn new(init_item: U256) -> Self {
         // Init the contract
-        let mut erc20 = ERC20::default();
+        let mut storage = Storage::default();
 
         // Update state
         erc20.owner.write(owner);
