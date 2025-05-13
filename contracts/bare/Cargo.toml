@@ -1,5 +1,5 @@
 [package]
-name = "bare"
+name = "storage"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,11 +11,9 @@ deploy = []
 interface-only = []
 
 [dependencies]
-# r55
 contract-derive = { git = "https://github.com/r55-eth/r55.git", branch = "main"}
 eth-riscv-runtime = { git = "https://github.com/r55-eth/r55.git", branch = "main" }
 
-# alloy
 alloy-core = { version = "0.8.20", default-features = false }
 alloy-sol-types = { version = "0.8.20", default-features = false }
 
