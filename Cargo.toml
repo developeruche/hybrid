@@ -1,5 +1,5 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "bins/dev-node","bins/node", "crates/compile", "crates/vm"]
+members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm"]
 
 
 exclude = ["contracts/*", "examples/*"]

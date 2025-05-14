@@ -2586,10 +2586,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dev-node"
-version = "0.1.0"
-
-[[package]]
 name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5056,6 +5052,16 @@ dependencies = [
 [[package]]
 name = "node"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored",
+ "eyre",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "vm",
+]
 
 [[package]]
 name = "nom"
