@@ -1,12 +1,12 @@
 //! Handlers for the cargo-cli command
-use std::{fs, path::PathBuf};
-
 use crate::command::{BuildArgs, DeployArgs, NewArgs};
 use anyhow::{anyhow, Result};
 use colored::Colorize;
 use compile::run_contract_compilation;
 use fs_extra::dir::{self, CopyOptions};
 use indicatif::{ProgressBar, ProgressStyle};
+use std::{fs, path::PathBuf};
+use toml_edit::{value, DocumentMut};
 use tracing::info;
 
 /// Create a new project from a template
@@ -65,9 +65,21 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
     // Update the project name in Cargo.toml
     let cargo_toml_path = target_dir.join("Cargo.toml");
     if cargo_toml_path.exists() {
-        let mut cargo_toml = fs::read_to_string(&cargo_toml_path)?;
-        cargo_toml = cargo_toml.replace("name = \"", &format!("name = \"{}\"", args.name));
-        fs::write(&cargo_toml_path, cargo_toml)?;
+        let cargo_toml = fs::read_to_string(&cargo_toml_path)?;
+        let mut doc = cargo_toml.parse::<DocumentMut>()?;
+
+        // Update the package name
+        if let Some(package) = doc.get_mut("package") {
+            if let Some(name) = package.get_mut("name") {
+                *name = value(&args.name); // Set the new name
+            } else {
+                return Err(anyhow::anyhow!("No 'name' field found in 'package' section"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("No 'package' section found in Cargo.toml"));
+        }
+        
+        fs::write(&cargo_toml_path, doc.to_string())?;
     }
 
     pb.finish_with_message(format!(
@@ -124,33 +136,8 @@ pub fn build_contract(args: &BuildArgs, check_only: bool) -> Result<()> {
     pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
     // Use the compile crate's run_contract_compilation function
-    if check_only {
-        // In check mode, we temporarily compile but don't save the output
-        let temp_dir = tempfile::tempdir()?;
-        let temp_path = temp_dir.path();
+    run_contract_compilation(&contract_root, check_only, pb, args.out.clone())?;
 
-        // Copy contract files to temp directory
-        let mut copy_options = CopyOptions::new();
-        copy_options.overwrite = true;
-        copy_options.copy_inside = true;
-        dir::copy(&contract_root, temp_path, &copy_options)?;
-
-        run_contract_compilation(&temp_path.to_path_buf())?;
-    } else {
-        run_contract_compilation(&contract_root)?;
-    }
-
-    if check_only {
-        pb.finish_with_message("Contract check completed successfully!".green().to_string());
-        println!("\n✅ {}\n", "Contract syntax check passed!".green().bold());
-    } else {
-        pb.finish_with_message("Contract build completed successfully!".green().to_string());
-        println!(
-            "\n✅ {} to {}\n",
-            "Contract built successfully".green().bold(),
-            args.out.cyan()
-        );
-    }
 
     Ok(())
 }

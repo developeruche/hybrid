@@ -147,6 +147,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "toml_edit",
  "tracing",
  "tracing-subscriber",
 ]
@@ -227,6 +228,8 @@ name = "compile"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "colored",
+ "indicatif",
  "syn 1.0.109",
  "toml",
  "tracing",
