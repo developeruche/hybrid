@@ -8,5 +8,6 @@ exclude = ["contracts/*", "examples/*"]
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1.0.98"
-
+indicatif = "0.17"
+colored = "2.1"
 

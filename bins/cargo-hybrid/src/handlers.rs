@@ -136,33 +136,8 @@ pub fn build_contract(args: &BuildArgs, check_only: bool) -> Result<()> {
     pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
     // Use the compile crate's run_contract_compilation function
-    if check_only {
-        // In check mode, we temporarily compile but don't save the output
-        let temp_dir = tempfile::tempdir()?;
-        let temp_path = temp_dir.path();
+    run_contract_compilation(&contract_root, check_only, pb, args.out.clone())?;
 
-        // Copy contract files to temp directory
-        let mut copy_options = CopyOptions::new();
-        copy_options.overwrite = true;
-        copy_options.copy_inside = true;
-        dir::copy(&contract_root, temp_path, &copy_options)?;
-
-        run_contract_compilation(&temp_path.to_path_buf())?;
-    } else {
-        run_contract_compilation(&contract_root)?;
-    }
-
-    if check_only {
-        pb.finish_with_message("Contract check completed successfully!".green().to_string());
-        println!("\n✅ {}\n", "Contract syntax check passed!".green().bold());
-    } else {
-        pb.finish_with_message("Contract build completed successfully!".green().to_string());
-        println!(
-            "\n✅ {} to {}\n",
-            "Contract built successfully".green().bold(),
-            args.out.cyan()
-        );
-    }
 
     Ok(())
 }
