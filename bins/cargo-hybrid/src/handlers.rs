@@ -73,12 +73,14 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
             if let Some(name) = package.get_mut("name") {
                 *name = value(&args.name); // Set the new name
             } else {
-                return Err(anyhow::anyhow!("No 'name' field found in 'package' section"));
+                return Err(anyhow::anyhow!(
+                    "No 'name' field found in 'package' section"
+                ));
             }
         } else {
             return Err(anyhow::anyhow!("No 'package' section found in Cargo.toml"));
         }
-        
+
         fs::write(&cargo_toml_path, doc.to_string())?;
     }
 
@@ -137,7 +139,6 @@ pub fn build_contract(args: &BuildArgs, check_only: bool) -> Result<()> {
 
     // Use the compile crate's run_contract_compilation function
     run_contract_compilation(&contract_root, check_only, pb, args.out.clone())?;
-
 
     Ok(())
 }

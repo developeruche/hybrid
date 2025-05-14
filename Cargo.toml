@@ -1,5 +1,5 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "bins/dev-node","bins/node", "crates/compile", "crates/vm"]
+members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm"]
 
 
 exclude = ["contracts/*", "examples/*"]
@@ -10,4 +10,13 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 anyhow = "1.0.98"
 indicatif = "0.17"
 colored = "2.1"
+jsonrpsee = "0.20.0"
+eyre = "0.6"
 
+# reth 
+reth = { git = "https://github.com/developeruche/reth.git", branch = "main"}
+reth-ethereum = { git = "https://github.com/developeruche/reth.git", branch = "main"}
+reth-tracing = { git = "https://github.com/developeruche/reth.git", branch = "main"}
+alloy-evm = { version = "0.8.0", default-features = false }
+alloy-genesis = { version = "1.0.1", default-features = false }
+alloy-primitives = { version = "1.1.0", default-features = false, features = ["map-foldhash"] }
