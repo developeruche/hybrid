@@ -1,38 +1,18 @@
 //! VM factory related ops
-
 use alloy_evm::{eth::EthEvmContext, precompiles::PrecompilesMap, EvmFactory};
-use alloy_genesis::Genesis;
-use alloy_primitives::{address, Bytes};
-use reth::{
-    builder::{components::ExecutorBuilder, BuilderContext, NodeBuilder},
-    tasks::TaskManager,
-};
-use reth_ethereum::{
-    chainspec::{Chain, ChainSpec},
-    evm::{
-        primitives::{Database, EvmEnv},
-        revm::{
-            context::{Context, TxEnv},
-            context_interface::result::{EVMError, HaltReason},
-            handler::EthPrecompiles,
-            inspector::{Inspector, NoOpInspector},
-            interpreter::interpreter::EthInterpreter,
-            precompile::{PrecompileFn, PrecompileOutput, PrecompileResult, Precompiles},
-            primitives::hardfork::SpecId,
-            MainBuilder, MainContext,
-        },
-        EthEvm, EthEvmConfig,
+use reth_ethereum::evm::{
+    primitives::{Database, EvmEnv},
+    revm::{
+        context::{Context, TxEnv},
+        context_interface::result::{EVMError, HaltReason},
+        handler::EthPrecompiles,
+        inspector::{Inspector, NoOpInspector},
+        interpreter::interpreter::EthInterpreter,
+        primitives::hardfork::SpecId,
+        MainBuilder, MainContext,
     },
-    node::{
-        api::{FullNodeTypes, NodeTypes},
-        core::{args::RpcServerArgs, node_config::NodeConfig},
-        node::EthereumAddOns,
-        EthereumNode,
-    },
-    EthPrimitives,
+    EthEvm,
 };
-use reth_tracing::{RethTracer, Tracer};
-use std::sync::OnceLock;
 
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
@@ -49,7 +29,6 @@ impl EvmFactory for VmFactory {
     type Precompiles = PrecompilesMap;
 
     fn create_evm<DB: Database>(&self, db: DB, input: EvmEnv) -> Self::Evm<DB, NoOpInspector> {
-        // let spec = input.cfg_env.spec;
         let evm = Context::mainnet()
             .with_db(db)
             .with_cfg(input.cfg_env)
@@ -58,10 +37,6 @@ impl EvmFactory for VmFactory {
             .with_precompiles(PrecompilesMap::from_static(
                 EthPrecompiles::default().precompiles,
             ));
-
-        // if spec == SpecId::PRAGUE {
-        //     evm = evm.with_precompiles(PrecompilesMap::from_static(prague_custom()));
-        // }
 
         EthEvm::new(evm, false)
     }
