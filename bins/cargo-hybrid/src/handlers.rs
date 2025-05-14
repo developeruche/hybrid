@@ -1,12 +1,12 @@
 //! Handlers for the cargo-cli command
-use std::{fs, path::PathBuf};
-
 use crate::command::{BuildArgs, DeployArgs, NewArgs};
 use anyhow::{anyhow, Result};
 use colored::Colorize;
 use compile::run_contract_compilation;
 use fs_extra::dir::{self, CopyOptions};
 use indicatif::{ProgressBar, ProgressStyle};
+use std::{fs, path::PathBuf};
+use toml_edit::{value, DocumentMut};
 use tracing::info;
 
 /// Create a new project from a template
@@ -65,9 +65,21 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
     // Update the project name in Cargo.toml
     let cargo_toml_path = target_dir.join("Cargo.toml");
     if cargo_toml_path.exists() {
-        let mut cargo_toml = fs::read_to_string(&cargo_toml_path)?;
-        cargo_toml = cargo_toml.replace("name = \"", &format!("name = \"{}\"", args.name));
-        fs::write(&cargo_toml_path, cargo_toml)?;
+        let cargo_toml = fs::read_to_string(&cargo_toml_path)?;
+        let mut doc = cargo_toml.parse::<DocumentMut>()?;
+
+        // Update the package name
+        if let Some(package) = doc.get_mut("package") {
+            if let Some(name) = package.get_mut("name") {
+                *name = value(&args.name); // Set the new name
+            } else {
+                return Err(anyhow::anyhow!("No 'name' field found in 'package' section"));
+            }
+        } else {
+            return Err(anyhow::anyhow!("No 'package' section found in Cargo.toml"));
+        }
+        
+        fs::write(&cargo_toml_path, doc.to_string())?;
     }
 
     pb.finish_with_message(format!(
