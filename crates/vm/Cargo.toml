@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 reth.workspace = true
-reth-ethereum = { workspace = true, features = ["test-utils", "node", "evm", "pool"] }
+reth-ethereum = { workspace = true, features = ["test-utils", "node", "evm"] }
 reth-tracing.workspace = true
 alloy-evm.workspace = true
 alloy-genesis.workspace = true
