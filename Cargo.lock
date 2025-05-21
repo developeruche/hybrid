@@ -273,6 +273,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "alloy-evm"
+version = "0.9.1"
+source = "git+https://github.com/developeruche/alloy-evm.git?rev=1be996dff975729608a7917f55d435c852066226#1be996dff975729608a7917f55d435c852066226"
+dependencies = [
+ "alloy-consensus",
+ "alloy-eips 1.0.3",
+ "alloy-hardforks",
+ "alloy-primitives",
+ "alloy-sol-types",
+ "auto_impl",
+ "derive_more",
+ "hybrid_evm 0.1.0 (git+https://github.com/developeruche/hybrid?rev=9efaeb62b0b9ff1ad121e9128c9d0848e4eca31f)",
+ "revm",
+ "thiserror 2.0.12",
+]
+
+[[package]]
 name = "alloy-genesis"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3640,6 +3657,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hybrid_evm"
+version = "0.1.0"
+dependencies = [
+ "revm",
+]
+
+[[package]]
+name = "hybrid_evm"
+version = "0.1.0"
+source = "git+https://github.com/developeruche/hybrid?rev=9efaeb62b0b9ff1ad121e9128c9d0848e4eca31f#9efaeb62b0b9ff1ad121e9128c9d0848e4eca31f"
+dependencies = [
+ "revm",
+]
+
+[[package]]
 name = "hyper"
 version = "0.14.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6325,7 +6357,7 @@ dependencies = [
  "alloy-chains",
  "alloy-consensus",
  "alloy-eips 1.0.3",
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-genesis",
  "alloy-primitives",
  "alloy-trie",
@@ -6865,7 +6897,7 @@ source = "git+https://github.com/paradigmxyz/reth.git?branch=main#e6ce41ebba0d87
 dependencies = [
  "alloy-consensus",
  "alloy-eips 1.0.3",
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-primitives",
  "alloy-rlp",
  "alloy-rpc-types-engine",
@@ -7246,7 +7278,7 @@ source = "git+https://github.com/paradigmxyz/reth.git?branch=main#e6ce41ebba0d87
 dependencies = [
  "alloy-consensus",
  "alloy-eips 1.0.3",
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-primitives",
  "auto_impl",
  "derive_more",
@@ -7269,7 +7301,7 @@ source = "git+https://github.com/paradigmxyz/reth.git?branch=main#e6ce41ebba0d87
 dependencies = [
  "alloy-consensus",
  "alloy-eips 1.0.3",
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-primitives",
  "derive_more",
  "parking_lot",
@@ -7287,7 +7319,7 @@ name = "reth-execution-errors"
 version = "1.4.1"
 source = "git+https://github.com/paradigmxyz/reth.git?branch=main#e6ce41ebba0d8752cef9ed885aae057e09226d05"
 dependencies = [
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-primitives",
  "alloy-rlp",
  "nybbles",
@@ -7302,7 +7334,7 @@ source = "git+https://github.com/paradigmxyz/reth.git?branch=main#e6ce41ebba0d87
 dependencies = [
  "alloy-consensus",
  "alloy-eips 1.0.3",
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-primitives",
  "derive_more",
  "reth-ethereum-primitives",
@@ -8142,7 +8174,7 @@ dependencies = [
  "alloy-consensus",
  "alloy-dyn-abi",
  "alloy-eips 1.0.3",
- "alloy-evm",
+ "alloy-evm 0.8.0",
  "alloy-genesis",
  "alloy-network",
  "alloy-primitives",
@@ -10825,7 +10857,7 @@ dependencies = [
 name = "vm"
 version = "0.1.0"
 dependencies = [
- "alloy-evm",
+ "alloy-evm 0.9.1",
  "alloy-genesis",
  "alloy-primitives",
  "anyhow",
