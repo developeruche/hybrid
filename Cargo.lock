@@ -275,7 +275,7 @@ dependencies = [
 [[package]]
 name = "alloy-evm"
 version = "0.9.1"
-source = "git+https://github.com/developeruche/alloy-evm.git?rev=70143f5c2916bdc217dd55b575ea231c5fda5a39#70143f5c2916bdc217dd55b575ea231c5fda5a39"
+source = "git+https://github.com/developeruche/alloy-evm.git?rev=1be996dff975729608a7917f55d435c852066226#1be996dff975729608a7917f55d435c852066226"
 dependencies = [
  "alloy-consensus",
  "alloy-eips 1.0.3",
@@ -284,7 +284,7 @@ dependencies = [
  "alloy-sol-types",
  "auto_impl",
  "derive_more",
- "hybrid_evm 0.1.0 (git+https://github.com/developeruche/hybrid?rev=6d2c6112138c36a3305c56a9145761157c7c45dc)",
+ "hybrid_evm 0.1.0 (git+https://github.com/developeruche/hybrid?rev=9efaeb62b0b9ff1ad121e9128c9d0848e4eca31f)",
  "revm",
  "thiserror 2.0.12",
 ]
@@ -3666,7 +3666,7 @@ dependencies = [
 [[package]]
 name = "hybrid_evm"
 version = "0.1.0"
-source = "git+https://github.com/developeruche/hybrid?rev=6d2c6112138c36a3305c56a9145761157c7c45dc#6d2c6112138c36a3305c56a9145761157c7c45dc"
+source = "git+https://github.com/developeruche/hybrid?rev=9efaeb62b0b9ff1ad121e9128c9d0848e4eca31f#9efaeb62b0b9ff1ad121e9128c9d0848e4eca31f"
 dependencies = [
  "revm",
 ]
