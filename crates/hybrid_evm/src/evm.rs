@@ -16,24 +16,13 @@ pub struct HybridEvm<CTX, INSP>(
 
 impl<CTX, INSP> HybridEvm<CTX, INSP> {
     /// Consumed self and returns new Evm type with given Inspector.
-    pub fn with_inspector<OINSP>(self, inspector: OINSP) -> Evm<CTX, OINSP, EthInstructions<EthInterpreter, CTX>, EthPrecompiles> {
-        Evm {
+    pub fn with_inspector<OINSP>(self, inspector: OINSP) -> HybridEvm<CTX, OINSP> {
+        HybridEvm(Evm {
             ctx: self.0.ctx,
             inspector,
-
             instruction: self.0.instruction,
             precompiles: self.0.precompiles,
-        }
-    }
-    
-    /// Consumes self and returns new Evm type with given Precompiles.
-    pub fn with_precompiles<OP>(self, precompiles: OP) -> Evm<CTX, INSP, EthInstructions<EthInterpreter, CTX>, OP> {
-        Evm {
-            ctx: self.0.ctx,
-            inspector: self.0.inspector,
-            instruction: self.0.instruction,
-            precompiles,
-        }
+        })
     }
     
     /// Consumes self and returns inner Inspector.

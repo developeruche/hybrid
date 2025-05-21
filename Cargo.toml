@@ -16,7 +16,7 @@ eyre = "0.6"
 reth = { git = "https://github.com/paradigmxyz/reth.git", branch = "main"}
 reth-ethereum = { git = "https://github.com/paradigmxyz/reth.git", branch = "main"}
 reth-tracing = { git = "https://github.com/paradigmxyz/reth.git", branch = "main"}
-alloy-evm = { git = "https://github.com/developeruche/alloy-evm.git", rev = "0eed4d5e7651e8d76d797b67bdb5902e8f6d8bee", default-features = false }
+alloy-evm = { git = "https://github.com/developeruche/alloy-evm.git", rev = "70143f5c2916bdc217dd55b575ea231c5fda5a39", default-features = false }
 # alloy-evm = { git = "https://github.com/developeruche/alloy-evm.git", branch = "hybrid-evm", default-features = false }
 alloy-genesis = { version = "1.0.1", default-features = false }
 alloy-primitives = { version = "1.1.0", default-features = false, features = ["map-foldhash"] }
