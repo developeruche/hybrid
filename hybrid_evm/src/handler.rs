@@ -1,16 +1,16 @@
-use reth::revm::{
+use revm::{
+    Database,
     context::{
-        result::{EVMError, HaltReason, InvalidTransaction},
         JournalOutput,
+        result::{EVMError, HaltReason, InvalidTransaction},
     },
     context_interface::{ContextTr, JournalTr},
     handler::{
-        instructions::InstructionProvider, EthFrame, EvmTr, FrameResult, Handler,
-        PrecompileProvider,
+        EthFrame, EvmTr, FrameResult, Handler, PrecompileProvider,
+        instructions::InstructionProvider,
     },
     inspector::{Inspector, InspectorEvmTr, InspectorHandler},
-    interpreter::{interpreter::EthInterpreter, InterpreterResult},
-    Database,
+    interpreter::{InterpreterResult, interpreter::EthInterpreter},
 };
 
 pub struct HybridHandler<EVM> {
@@ -28,13 +28,13 @@ impl<EVM> Default for HybridHandler<EVM> {
 impl<EVM> Handler for HybridHandler<EVM>
 where
     EVM: EvmTr<
-        Context: ContextTr<Journal: JournalTr<FinalOutput = JournalOutput>>,
-        Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
-        Instructions: InstructionProvider<
-            Context = EVM::Context,
-            InterpreterTypes = EthInterpreter,
+            Context: ContextTr<Journal: JournalTr<FinalOutput = JournalOutput>>,
+            Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
+            Instructions: InstructionProvider<
+                Context = EVM::Context,
+                InterpreterTypes = EthInterpreter,
+            >,
         >,
-    >,
 {
     type Evm = EVM;
     type Error = EVMError<<<EVM::Context as ContextTr>::Db as Database>::Error, InvalidTransaction>;
@@ -51,14 +51,14 @@ where
 impl<EVM> InspectorHandler for HybridHandler<EVM>
 where
     EVM: InspectorEvmTr<
-        Inspector: Inspector<<<Self as Handler>::Evm as EvmTr>::Context, EthInterpreter>,
-        Context: ContextTr<Journal: JournalTr<FinalOutput = JournalOutput>>,
-        Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
-        Instructions: InstructionProvider<
-            Context = EVM::Context,
-            InterpreterTypes = EthInterpreter,
+            Inspector: Inspector<<<Self as Handler>::Evm as EvmTr>::Context, EthInterpreter>,
+            Context: ContextTr<Journal: JournalTr<FinalOutput = JournalOutput>>,
+            Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
+            Instructions: InstructionProvider<
+                Context = EVM::Context,
+                InterpreterTypes = EthInterpreter,
+            >,
         >,
-    >,
 {
     type IT = EthInterpreter;
 }

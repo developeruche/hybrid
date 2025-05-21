@@ -13,6 +13,7 @@ use reth_ethereum::evm::{
     },
     EthEvm,
 };
+use reth_tracing::tracing::instrument::WithSubscriber;
 
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
@@ -37,6 +38,11 @@ impl EvmFactory for VmFactory {
             .with_precompiles(PrecompilesMap::from_static(
                 EthPrecompiles::default().precompiles,
             ));
+
+        // let evm = HybridEvm::new(Context::mainnet()
+        //     .with_db(db)
+        //     .with_cfg(input.cfg_env)
+        //     .with_block(input.block_env), NoOpInspector {});
 
         EthEvm::new(evm, false)
     }

@@ -1,5 +1,5 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm"]
+members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm", "hybrid_evm"]
 
 
 exclude = ["contracts/*", "examples/*"]
@@ -19,3 +19,7 @@ reth-tracing = { git = "https://github.com/paradigmxyz/reth.git", branch = "main
 alloy-evm = { version = "0.8.0", default-features = false }
 alloy-genesis = { version = "1.0.1", default-features = false }
 alloy-primitives = { version = "1.1.0", default-features = false, features = ["map-foldhash"] }
+
+
+# revm
+revm = { version = "23.1.0", default-features = false }

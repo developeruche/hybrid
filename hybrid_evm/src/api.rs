@@ -1,16 +1,16 @@
-use reth::revm::{
+use revm::{
+    DatabaseCommit, ExecuteCommitEvm, ExecuteEvm,
     context::{
-        result::{HaltReason, InvalidTransaction},
         ContextSetters, JournalOutput,
+        result::{HaltReason, InvalidTransaction},
     },
     context_interface::{
-        result::{EVMError, ExecutionResult, ResultAndState},
         ContextTr, Database, JournalTr,
+        result::{EVMError, ExecutionResult, ResultAndState},
     },
     handler::{EvmTr, Handler},
     inspector::{InspectCommitEvm, InspectEvm, Inspector, InspectorHandler, JournalExt},
     interpreter::interpreter::EthInterpreter,
-    DatabaseCommit, ExecuteCommitEvm, ExecuteEvm,
 };
 
 use super::{evm::HybridEvm, handler::HybridHandler};
@@ -78,9 +78,9 @@ where
 impl<CTX, INSP> InspectCommitEvm for HybridEvm<CTX, INSP>
 where
     CTX: ContextSetters<
-        Db: DatabaseCommit,
-        Journal: JournalTr<FinalOutput = JournalOutput> + JournalExt,
-    >,
+            Db: DatabaseCommit,
+            Journal: JournalTr<FinalOutput = JournalOutput> + JournalExt,
+        >,
     INSP: Inspector<CTX, EthInterpreter>,
 {
     fn inspect_replay_commit(&mut self) -> Self::CommitOutput {
