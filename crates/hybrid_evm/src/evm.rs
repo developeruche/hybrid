@@ -1,6 +1,6 @@
-use revm::{
+use reth::revm::{
     Inspector,
-    context::{ContextSetters, ContextTr, Evm},
+    context::{ContextSetters, ContextTr, Evm, EvmData},
     handler::{
         EthPrecompiles, EvmTr,
         instructions::{EthInstructions, InstructionProvider},
@@ -14,28 +14,10 @@ pub struct HybridEvm<CTX, INSP>(
     pub Evm<CTX, INSP, EthInstructions<EthInterpreter, CTX>, EthPrecompiles>,
 );
 
-impl<CTX, INSP> HybridEvm<CTX, INSP> {
-    /// Consumed self and returns new Evm type with given Inspector.
-    pub fn with_inspector<OINSP>(self, inspector: OINSP) -> HybridEvm<CTX, OINSP> {
-        HybridEvm(Evm {
-            ctx: self.0.ctx,
-            inspector,
-            instruction: self.0.instruction,
-            precompiles: self.0.precompiles,
-        })
-    }
-    
-    /// Consumes self and returns inner Inspector.
-    pub fn into_inspector(self) -> INSP {
-        self.0.inspector
-    }
-}
-
 impl<CTX: ContextTr, INSP> HybridEvm<CTX, INSP> {
     pub fn new(ctx: CTX, inspector: INSP) -> Self {
         Self(Evm {
-            ctx,
-            inspector,
+            data: EvmData { ctx, inspector },
             instruction: EthInstructions::new_mainnet(),
             precompiles: EthPrecompiles::default(),
         })
@@ -51,7 +33,7 @@ where
     type Precompiles = EthPrecompiles;
 
     fn ctx(&mut self) -> &mut Self::Context {
-        &mut self.0.ctx
+        &mut self.0.data.ctx
     }
 
     fn ctx_ref(&self) -> &Self::Context {
@@ -99,9 +81,9 @@ where
         >,
     ) -> <<Self::Instructions as InstructionProvider>::InterpreterTypes as InterpreterTypes>::Output
     {
-        let context = &mut self.0.ctx;
+        let context = &mut self.0.data.ctx;
         let instructions = &mut self.0.instruction;
-        let inspector = &mut self.0.inspector;
+        let inspector = &mut self.0.data.inspector;
 
         inspect_instructions(
             context,
@@ -109,5 +91,24 @@ where
             inspector,
             instructions.instruction_table(),
         )
+    }
+}
+
+impl<CTX, INSP> HybridEvm<CTX, INSP> {
+    /// Consumed self and returns new Evm type with given Inspector.
+    pub fn with_inspector<OINSP>(self, inspector: OINSP) -> HybridEvm<CTX, OINSP> {
+        HybridEvm(Evm {
+            data: EvmData {
+                ctx: self.0.data.ctx,
+                inspector,
+            },
+            instruction: self.0.instruction,
+            precompiles: self.0.precompiles,
+        })
+    }
+
+    /// Consumes self and returns inner Inspector.
+    pub fn into_inspector(self) -> INSP {
+        self.0.data.inspector
     }
 }

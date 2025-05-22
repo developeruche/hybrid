@@ -1,6 +1,11 @@
 //! Module houses the VM sandbox for this node (EVM and r55-(RISC-V VM))
+pub mod constants;
+pub mod executor;
+pub mod factory;
+pub mod payload_builder;
+
 use constants::obtain_specs;
-use executor::VmExecutorBuilder;
+use executor::HybridExecutorBuilder;
 use reth::{
     args::RpcServerArgs,
     builder::{NodeBuilder, NodeConfig},
@@ -8,10 +13,6 @@ use reth::{
 };
 use reth_ethereum::node::{node::EthereumAddOns, EthereumNode};
 use reth_tracing::{RethTracer, Tracer};
-
-pub mod constants;
-pub mod executor;
-pub mod factory;
 
 pub async fn run_node(is_dev: bool) -> Result<(), eyre::Error> {
     let _guard = RethTracer::new().init().map_err(|e| anyhow::anyhow!(e));
@@ -35,7 +36,7 @@ pub async fn run_node(is_dev: bool) -> Result<(), eyre::Error> {
         // configure the node with regular ethereum types
         .with_types::<EthereumNode>()
         // use default ethereum components but with our executor
-        .with_components(EthereumNode::components().executor(VmExecutorBuilder::default()))
+        .with_components(EthereumNode::components().executor(HybridExecutorBuilder::default()))
         .with_add_ons(EthereumAddOns::default())
         .launch()
         .await
