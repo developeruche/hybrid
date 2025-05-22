@@ -46,6 +46,13 @@ where
     type HaltReason = HaltReason;
 
     // would be making modification to the handler to also accomadate the RISC V exec logic
+    fn execution(
+        &mut self,
+        evm: &mut Self::Evm,
+        init_and_floor_gas: &reth::revm::interpreter::InitialAndFloorGas,
+    ) -> Result<FrameResult, Self::Error> {
+        todo!()
+    }
 }
 
 impl<EVM> InspectorHandler for HybridHandler<EVM>
