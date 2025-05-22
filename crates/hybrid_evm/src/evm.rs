@@ -1,4 +1,4 @@
-use revm::{
+use reth::revm::{
     Inspector,
     context::{ContextSetters, ContextTr, Evm, EvmData},
     handler::{
@@ -91,5 +91,24 @@ where
             inspector,
             instructions.instruction_table(),
         )
+    }
+}
+
+impl<CTX, INSP> HybridEvm<CTX, INSP> {
+    /// Consumed self and returns new Evm type with given Inspector.
+    pub fn with_inspector<OINSP>(self, inspector: OINSP) -> HybridEvm<CTX, OINSP> {
+        HybridEvm(Evm {
+            data: EvmData {
+                ctx: self.0.data.ctx,
+                inspector,
+            },
+            instruction: self.0.instruction,
+            precompiles: self.0.precompiles,
+        })
+    }
+
+    /// Consumes self and returns inner Inspector.
+    pub fn into_inspector(self) -> INSP {
+        self.0.data.inspector
     }
 }

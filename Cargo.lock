@@ -3617,7 +3617,8 @@ dependencies = [
 name = "hybrid_evm"
 version = "0.1.0"
 dependencies = [
- "revm",
+ "alloy-evm",
+ "reth",
 ]
 
 [[package]]
@@ -10710,6 +10711,7 @@ dependencies = [
  "alloy-primitives",
  "anyhow",
  "eyre",
+ "hybrid_evm",
  "reth",
  "reth-ethereum",
  "reth-ethereum-payload-builder",

@@ -1,5 +1,5 @@
 use super::{evm::HybridEvm, handler::HybridHandler};
-use revm::{
+use reth::revm::{
     DatabaseCommit, ExecuteCommitEvm, ExecuteEvm,
     context::{
         ContextSetters, JournalOutput,

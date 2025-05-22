@@ -1,4 +1,5 @@
 //! VM factory related ops
+use hybrid_evm::{eth_hybrid_evm::EthHybridEvm, evm::HybridEvm};
 use reth::revm::{
     context::{
         result::{EVMError, HaltReason},
@@ -15,10 +16,6 @@ use reth_ethereum::evm::{
     EthEvm,
 };
 
-// struct EthHybridEVM {
-//     inner: Hybrid
-// }
-
 /// Hybrid EVM configuration.
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
@@ -26,7 +23,7 @@ pub struct HybridEvmFactory;
 
 impl EvmFactory for HybridEvmFactory {
     type Evm<DB: Database, I: Inspector<EthEvmContext<DB>, EthInterpreter>>
-        = EthEvm<DB, I, EthPrecompiles>
+        = EthHybridEvm<DB, I>
     where
         <DB as Database>::Error: Send + Sync + 'static;
     type Tx = TxEnv;
@@ -49,7 +46,7 @@ impl EvmFactory for HybridEvmFactory {
             .build_mainnet_with_inspector(NoOpInspector {})
             .with_precompiles(EthPrecompiles::default());
 
-        EthEvm::new(evm, false)
+        EthHybridEvm::new(HybridEvm(evm), false)
     }
 
     fn create_evm_with_inspector<DB: Database, I: Inspector<Self::Context<DB>, EthInterpreter>>(
@@ -61,7 +58,7 @@ impl EvmFactory for HybridEvmFactory {
     where
         <DB as Database>::Error: Send + Sync + 'static,
     {
-        EthEvm::new(
+        EthHybridEvm::new(
             self.create_evm(db, input)
                 .into_inner()
                 .with_inspector(inspector),
