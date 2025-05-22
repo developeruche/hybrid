@@ -1,8 +1,8 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm", "crates/hybrid_evm"]
+members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm"]
 
 
-exclude = ["contracts/*", "examples/*"]
+exclude = ["contracts/*", "examples/*", "crates/hybrid_evm"]
 
 [workspace.dependencies]
 tracing = "0.1"
@@ -13,12 +13,12 @@ colored = "2.1"
 eyre = "0.6"
 
 # reth 
-reth = { git = "https://github.com/paradigmxyz/reth.git", branch = "main"}
-reth-ethereum = { git = "https://github.com/paradigmxyz/reth.git", branch = "main"}
-reth-tracing = { git = "https://github.com/paradigmxyz/reth.git", branch = "main"}
-alloy-evm = { git = "https://github.com/developeruche/alloy-evm.git", rev = "1be996dff975729608a7917f55d435c852066226", default-features = false }
-# alloy-evm = { git = "https://github.com/developeruche/alloy-evm.git", branch = "hybrid-evm", default-features = false }
-alloy-genesis = { version = "1.0.1", default-features = false }
+reth = { git = "https://github.com/paradigmxyz/reth.git", rev = "6f8e7258f4733279080e4bd8345ce50538a40d6e" }
+reth-ethereum = { git = "https://github.com/paradigmxyz/reth.git", rev = "6f8e7258f4733279080e4bd8345ce50538a40d6e" }
+reth-tracing = { git = "https://github.com/paradigmxyz/reth.git", rev = "6f8e7258f4733279080e4bd8345ce50538a40d6e" }
+
+alloy-evm = { version = "0.9", default-features = false }
+alloy-genesis = { version = "1.0.5", default-features = false }
 alloy-primitives = { version = "1.1.0", default-features = false, features = ["map-foldhash"] }
 
 
