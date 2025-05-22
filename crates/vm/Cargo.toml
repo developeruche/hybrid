@@ -7,6 +7,7 @@ edition = "2021"
 reth.workspace = true
 reth-ethereum = { workspace = true, features = ["test-utils", "node", "evm"] }
 reth-tracing.workspace = true
+reth-ethereum-payload-builder = { git = "https://github.com/paradigmxyz/reth.git", rev = "6f8e7258f4733279080e4bd8345ce50538a40d6e" }
 
 
 alloy-evm.workspace = true
