@@ -3614,6 +3614,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "hybrid_evm"
+version = "0.1.0"
+dependencies = [
+ "revm",
+]
+
+[[package]]
 name = "hyper"
 version = "0.14.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"

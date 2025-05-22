@@ -1,8 +1,8 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm"]
+members = [ "bins/cargo-hybrid", "bins/node", "crates/compile", "crates/vm", "crates/hybrid_evm"]
 
 
-exclude = ["contracts/*", "examples/*", "crates/hybrid_evm"]
+exclude = ["contracts/*", "examples/*"]
 
 [workspace.dependencies]
 tracing = "0.1"
@@ -23,4 +23,4 @@ alloy-primitives = { version = "1.0.0", default-features = false, features = ["m
 
 
 # revm
-revm = { version = "23.1.0", default-features = false }
+revm = { version = "22.0.1", default-features = false }

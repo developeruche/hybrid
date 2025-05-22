@@ -40,9 +40,9 @@ pub fn obtain_specs() -> ChainSpec {
         }
     }
     "#;
-    
+
     let genesis: Genesis = serde_json::from_str(custom_genesis).unwrap();
-    
+
     let spec = ChainSpec::builder()
         .chain(Chain::mainnet())
         .genesis(genesis)

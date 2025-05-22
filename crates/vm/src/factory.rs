@@ -15,6 +15,10 @@ use reth_ethereum::evm::{
     EthEvm,
 };
 
+// struct EthHybridEVM {
+//     inner: Hybrid
+// }
+
 /// Hybrid EVM configuration.
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
