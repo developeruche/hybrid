@@ -10707,6 +10707,7 @@ dependencies = [
  "reth-ethereum",
  "reth-ethereum-payload-builder",
  "reth-tracing",
+ "serde_json",
 ]
 
 [[package]]
