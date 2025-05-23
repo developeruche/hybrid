@@ -11,10 +11,7 @@ use reth::revm::{
     primitives::hardfork::SpecId,
     Context, Database, Inspector, MainBuilder, MainContext,
 };
-use reth_ethereum::evm::{
-    primitives::{eth::EthEvmContext, EvmEnv, EvmFactory},
-    EthEvm,
-};
+use reth_ethereum::evm::primitives::{eth::EthEvmContext, EvmEnv, EvmFactory};
 
 /// Hybrid EVM configuration.
 #[derive(Debug, Clone, Default)]

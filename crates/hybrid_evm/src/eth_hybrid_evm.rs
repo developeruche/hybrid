@@ -1,6 +1,4 @@
 //! This is an encapcultion for the EVM
-use std::ops::{Deref, DerefMut};
-
 use alloy_evm::{Evm, EvmEnv};
 use reth::revm::{
     Context, Database, ExecuteEvm, InspectEvm, Inspector,
@@ -8,9 +6,9 @@ use reth::revm::{
         BlockEnv, CfgEnv, TxEnv,
         result::{EVMError, HaltReason, ResultAndState},
     },
-    handler::EthPrecompiles,
     primitives::{Address, Bytes, TxKind, U256, hardfork::SpecId},
 };
+use std::ops::{Deref, DerefMut};
 
 /// The Ethereum EVM context type.
 pub type EthEvmContext<DB> = Context<BlockEnv, TxEnv, CfgEnv, DB>;

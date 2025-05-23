@@ -5,10 +5,7 @@ use reth::revm::{
         result::{EVMError, HaltReason, InvalidTransaction},
     },
     context_interface::{ContextTr, JournalTr},
-    handler::{
-        EthFrame, EvmTr, FrameResult, Handler, PrecompileProvider,
-        instructions::InstructionProvider,
-    },
+    handler::{EthFrame, EvmTr, Handler, PrecompileProvider, instructions::InstructionProvider},
     inspector::{Inspector, InspectorEvmTr, InspectorHandler},
     interpreter::{InterpreterResult, interpreter::EthInterpreter},
 };
@@ -45,14 +42,8 @@ where
     >;
     type HaltReason = HaltReason;
 
-    // would be making modification to the handler to also accomadate the RISC V exec logic
-    fn execution(
-        &mut self,
-        evm: &mut Self::Evm,
-        init_and_floor_gas: &reth::revm::interpreter::InitialAndFloorGas,
-    ) -> Result<FrameResult, Self::Error> {
-        todo!()
-    }
+    // Here are this things I need to apply
+    // Looks like it is just the exection that would be update...
 }
 
 impl<EVM> InspectorHandler for HybridHandler<EVM>
