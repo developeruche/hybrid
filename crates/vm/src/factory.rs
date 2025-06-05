@@ -13,6 +13,8 @@ use reth::revm::{
 };
 use reth_ethereum::evm::primitives::{eth::EthEvmContext, EvmEnv, EvmFactory};
 
+use crate::constants::HYBRID_MAX_CODE_SIZE;
+
 /// Hybrid EVM configuration.
 #[derive(Debug, Clone, Default)]
 #[non_exhaustive]
@@ -36,9 +38,12 @@ impl EvmFactory for HybridEvmFactory {
     where
         <DB as Database>::Error: Send + Sync + 'static,
     {
+        let mut cfg_env = input.cfg_env;
+        cfg_env.limit_contract_code_size = Some(HYBRID_MAX_CODE_SIZE);
+
         let evm = Context::mainnet()
             .with_db(db)
-            .with_cfg(input.cfg_env)
+            .with_cfg(cfg_env)
             .with_block(input.block_env)
             .build_mainnet_with_inspector(NoOpInspector {})
             .with_precompiles(EthPrecompiles::default());

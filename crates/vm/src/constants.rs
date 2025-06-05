@@ -2,6 +2,8 @@
 use alloy_genesis::Genesis;
 use reth::chainspec::{Chain, ChainSpec};
 
+pub const HYBRID_MAX_CODE_SIZE: usize = 24576 * 50;
+
 /// Returns the chain specs for this node
 pub fn obtain_specs() -> ChainSpec {
     let custom_genesis = r#"

@@ -17,7 +17,10 @@ pub struct HybridEvm<CTX, INSP>(
 impl<CTX: ContextTr, INSP> HybridEvm<CTX, INSP> {
     pub fn new(ctx: CTX, inspector: INSP) -> Self {
         Self(Evm {
-            data: EvmData { ctx, inspector },
+            data: EvmData {
+                ctx: ctx,
+                inspector,
+            },
             instruction: EthInstructions::new_mainnet(),
             precompiles: EthPrecompiles::default(),
         })
