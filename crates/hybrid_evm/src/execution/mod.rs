@@ -12,7 +12,7 @@ use reth::{
             interpreter::EthInterpreter,
             interpreter_types::{LoopControl, ReturnData},
         },
-        primitives::{B256, Bytes, U256, alloy_primitives::Keccak256},
+        primitives::{Address, B256, Bytes, U256, alloy_primitives::Keccak256},
     },
 };
 use rvemu::{emulator::Emulator, exception::Exception};
@@ -161,15 +161,17 @@ where
                     Syscall::Create => return execute_create(emu, interpreter, host),
                     Syscall::ReturnCreateAddress => {
                         let dest_offset = emu.cpu.xregs.read(10);
-                        let addr = rvemu
-                            .created_address
-                            .expect("Unable to get created address");
+                        // let addr = rvemu
+                        //     .created_address
+                        //     .expect("Unable to get created address");
+                        let addr = Address::ZERO;
 
                         // write return data to memory
                         let return_memory = emu
                             .cpu
                             .bus
-                            .get_dram_slice(dest_offset..(dest_offset + 20_u64))?;
+                            .get_dram_slice(dest_offset..(dest_offset + 20_u64))
+                            .map_err(|_| "Failed to get DRAM slice".to_string())?;
                         return_memory.copy_from_slice(addr.as_slice());
                     }
                     Syscall::Revert => {
@@ -189,9 +191,17 @@ where
                         let caller = interpreter.input.caller_address;
                         // Break address into 3 u64s and write to registers
                         let caller_bytes = caller.as_slice();
-                        let first_u64 = u64::from_be_bytes(caller_bytes[0..8].try_into()?);
+                        let first_u64 = u64::from_be_bytes(
+                            caller_bytes[0..8]
+                                .try_into()
+                                .map_err(|_| "Error converting caller address to u64")?,
+                        );
                         emu.cpu.xregs.write(10, first_u64);
-                        let second_u64 = u64::from_be_bytes(caller_bytes[8..16].try_into()?);
+                        let second_u64 = u64::from_be_bytes(
+                            caller_bytes[8..16]
+                                .try_into()
+                                .map_err(|_| "Error converting caller address to u64")?,
+                        );
                         emu.cpu.xregs.write(11, second_u64);
                         let mut padded_bytes = [0u8; 8];
                         padded_bytes[..4].copy_from_slice(&caller_bytes[16..20]);
@@ -230,7 +240,8 @@ where
                         emu.cpu.xregs.write(13, limbs[3]);
                     }
                     Syscall::ChainId => {
-                        let value = host.chain_id().as_le_bytes();
+                        let value = host.chain_id();
+                        let value = value.as_le_bytes();
                         let mut arr = [0u8; 8];
                         arr.copy_from_slice(&value[..]);
                         emu.cpu.xregs.write(10, u64::from_le_bytes(arr));
@@ -245,7 +256,8 @@ where
                     }
                     Syscall::Number => {
                         let number = host.block_number();
-                        let limbs = U256::from(number).as_limbs();
+                        let limbs = U256::from(number);
+                        let limbs = limbs.as_limbs();
                         emu.cpu.xregs.write(10, limbs[0]);
                         emu.cpu.xregs.write(11, limbs[1]);
                         emu.cpu.xregs.write(12, limbs[2]);
@@ -261,7 +273,8 @@ where
                     }
                     Syscall::GasPrice => {
                         let value = host.tx().gas_price();
-                        let limbs = U256::from(value).as_limbs();
+                        let limbs = U256::from(value);
+                        let limbs = limbs.as_limbs();
                         emu.cpu.xregs.write(10, limbs[0]);
                         emu.cpu.xregs.write(11, limbs[1]);
                         emu.cpu.xregs.write(12, limbs[2]);
