@@ -5,10 +5,15 @@ use reth::revm::{
         result::{EVMError, HaltReason, InvalidTransaction},
     },
     context_interface::{ContextTr, JournalTr},
-    handler::{EthFrame, EvmTr, Handler, PrecompileProvider, instructions::InstructionProvider},
+    handler::{
+        EthFrame, EvmTr, FrameInitOrResult, Handler, PrecompileProvider,
+        instructions::InstructionProvider,
+    },
     inspector::{Inspector, InspectorEvmTr, InspectorHandler},
     interpreter::{InterpreterResult, interpreter::EthInterpreter},
 };
+
+use crate::frame::hybrid_frame_call;
 
 pub struct HybridHandler<EVM> {
     pub _phantom: core::marker::PhantomData<EVM>,
@@ -42,8 +47,14 @@ where
     >;
     type HaltReason = HaltReason;
 
-    // Here are this things I need to apply
-    // Looks like it is just the exection that would be update...
+    #[inline]
+    fn frame_call(
+        &mut self,
+        frame: &mut Self::Frame,
+        evm: &mut Self::Evm,
+    ) -> Result<FrameInitOrResult<Self::Frame>, Self::Error> {
+        hybrid_frame_call(frame, evm)
+    }
 }
 
 impl<EVM> InspectorHandler for HybridHandler<EVM>

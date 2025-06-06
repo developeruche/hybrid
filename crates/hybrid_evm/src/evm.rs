@@ -54,7 +54,10 @@ where
         >,
     ) -> <<Self::Instructions as InstructionProvider>::InterpreterTypes as InterpreterTypes>::Output
     {
-        self.0.run_interpreter(interpreter)
+        let context = &mut self.0.data.ctx;
+        let instructions = &mut self.0.instruction;
+
+        interpreter.run_plain(instructions.instruction_table(), context)
     }
 
     fn ctx_precompiles(&mut self) -> (&mut Self::Context, &mut Self::Precompiles) {
