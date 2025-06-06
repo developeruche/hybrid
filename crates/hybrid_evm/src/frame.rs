@@ -1,4 +1,5 @@
 //! This file holds modifications to the EVM frame to accomdate the Hybrid logic.
+use crate::riscv_execute::run_riscv_interpreter;
 use reth::revm::{
     Database,
     context::{
@@ -39,12 +40,16 @@ where
             >,
         >,
 {
-    let split_result = frame.interpreter.bytecode.bytecode().split_first();
-    if split_result.is_some() && *split_result.unwrap().0 == 0xFF {
-        let (_, _bytecode) = split_result.unwrap();
-        // Rest of the code would go here
+    let bytecode_clone = frame.interpreter.bytecode.clone();
+    let split_result = bytecode_clone.bytecode().split_first();
 
-        todo!()
+    if split_result.is_some() && *split_result.unwrap().0 == 0xFF {
+        let (_, bytecode) = split_result.unwrap();
+
+        return run_riscv_interpreter::<
+            EVM,
+            EVMError<<<EVM::Context as ContextTr>::Db as Database>::Error, InvalidTransaction>,
+        >(bytecode, frame, evm);
     } else {
         return Frame::run(frame, evm);
     }

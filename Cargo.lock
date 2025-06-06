@@ -3410,7 +3410,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
- "syn 2.0.101",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -3882,6 +3882,24 @@ dependencies = [
  "sha3",
  "thiserror 1.0.69",
  "uuid 0.8.2",
+]
+
+[[package]]
+name = "eth-riscv-interpreter"
+version = "0.1.0"
+source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
+dependencies = [
+ "goblin",
+ "rvemu",
+ "thiserror 2.0.12",
+]
+
+[[package]]
+name = "eth-riscv-syscalls"
+version = "0.1.0"
+source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
+dependencies = [
+ "thiserror-no-std",
 ]
 
 [[package]]
@@ -4364,6 +4382,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "goblin"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b363a30c165f666402fe6a3024d3bec7ebc898f96a4a23bd1c99f8dbf3f4f47"
+dependencies = [
+ "log",
+ "plain",
+ "scroll",
+]
+
+[[package]]
 name = "group"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4679,7 +4708,10 @@ name = "hybrid_evm"
 version = "0.1.0"
 dependencies = [
  "alloy-evm",
+ "eth-riscv-interpreter",
+ "eth-riscv-syscalls",
  "reth",
+ "rvemu",
 ]
 
 [[package]]
@@ -6760,6 +6792,12 @@ name = "pkg-config"
 version = "0.3.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
+
+[[package]]
+name = "plain"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
 name = "plain_hasher"
@@ -10368,6 +10406,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rvemu"
+version = "0.0.11"
+source = "git+https://github.com/r55-eth/rvemu.git#3f4f7a779c89b5545a4df4c0a864d41797fc35ef"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+]
+
+[[package]]
 name = "ryu"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10428,6 +10477,26 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "scroll"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ab8598aa408498679922eff7fa985c25d58a90771bd6be794434c5277eab1a6"
+dependencies = [
+ "scroll_derive",
+]
+
+[[package]]
+name = "scroll_derive"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1783eabc414609e28a5ba76aee5ddd52199f7107a0b24c2e9746a1ecc34a683d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
 
 [[package]]
 name = "scrypt"
@@ -11148,6 +11217,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.101",
+]
+
+[[package]]
+name = "thiserror-impl-no-std"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58e6318948b519ba6dc2b442a6d0b904ebfb8d411a3ad3e07843615a72249758"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "thiserror-no-std"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3ad459d94dd517257cc96add8a43190ee620011bb6e6cdc82dafd97dfafafea"
+dependencies = [
+ "thiserror-impl-no-std",
 ]
 
 [[package]]
