@@ -1,5 +1,5 @@
 //! Executor enbeding the custom VM
-use crate::factory::HybridEvmFactory;
+use crate::{factory::HybridEvmFactory, payload_builder::HybridEvmConfig};
 use reth::{
     api::{FullNodeTypes, NodeTypes},
     builder::{components::ExecutorBuilder, BuilderContext},
@@ -16,18 +16,21 @@ impl<Node> ExecutorBuilder<Node> for HybridExecutorBuilder
 where
     Node: FullNodeTypes<Types: NodeTypes<ChainSpec = ChainSpec, Primitives = EthPrimitives>>,
 {
-    type EVM = EthEvmConfig<HybridEvmFactory>;
+    type EVM = HybridEvmConfig<HybridEvmFactory>;
     type Executor = BasicBlockExecutorProvider<Self::EVM>;
 
     async fn build_evm(
         self,
         ctx: &BuilderContext<Node>,
     ) -> eyre::Result<(Self::EVM, Self::Executor)> {
-        let evm_config =
-            EthEvmConfig::new_with_evm_factory(ctx.chain_spec(), HybridEvmFactory::default());
-        Ok((
-            evm_config.clone(),
-            BasicBlockExecutorProvider::new(evm_config),
-        ))
+        let evm_config = HybridEvmConfig {
+            inner: EthEvmConfig::<HybridEvmFactory>::new_with_evm_factory(
+                ctx.chain_spec(),
+                HybridEvmFactory::default(),
+            ),
+        };
+        let executor = BasicBlockExecutorProvider::new(evm_config.clone());
+
+        Ok((evm_config, executor))
     }
 }

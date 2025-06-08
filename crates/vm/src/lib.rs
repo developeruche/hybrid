@@ -8,11 +8,13 @@ use constants::obtain_specs;
 use executor::HybridExecutorBuilder;
 use reth::{
     args::RpcServerArgs,
-    builder::{NodeBuilder, NodeConfig},
+    builder::{components::BasicPayloadServiceBuilder, NodeBuilder, NodeConfig},
     tasks::TaskManager,
 };
 use reth_ethereum::node::{node::EthereumAddOns, EthereumNode};
 use reth_tracing::{RethTracer, Tracer};
+
+use crate::payload_builder::HybridPayloadBuilder;
 
 pub async fn run_node(is_dev: bool) -> Result<(), eyre::Error> {
     let _guard = RethTracer::new().init().map_err(|e| anyhow::anyhow!(e));
@@ -36,7 +38,13 @@ pub async fn run_node(is_dev: bool) -> Result<(), eyre::Error> {
         // configure the node with regular ethereum types
         .with_types::<EthereumNode>()
         // use default ethereum components but with our executor
-        .with_components(EthereumNode::components().executor(HybridExecutorBuilder::default()))
+        .with_components(
+            EthereumNode::components()
+                .executor(HybridExecutorBuilder::default())
+                .payload(BasicPayloadServiceBuilder::new(
+                    HybridPayloadBuilder::default(),
+                )),
+        )
         .with_add_ons(EthereumAddOns::default())
         .launch()
         .await

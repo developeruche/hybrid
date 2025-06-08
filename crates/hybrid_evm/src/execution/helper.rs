@@ -75,6 +75,8 @@ pub fn execute_create(
     interpreter: &mut Interpreter,
     _host: &mut dyn Host,
 ) -> Result<InterpreterAction, String> {
+    println!("Running this create opcode on riscv");
+
     let value: u64 = emu.cpu.xregs.read(10);
 
     // Get initcode
@@ -113,6 +115,7 @@ pub fn execute_call(
     host: &mut dyn Host,
     is_static: bool,
 ) -> Result<InterpreterAction, String> {
+    println!("Running this call opcode on riscv");
     let a0: u64 = emu.cpu.xregs.read(10);
     let a1: u64 = emu.cpu.xregs.read(11);
     let a2: u64 = emu.cpu.xregs.read(12);

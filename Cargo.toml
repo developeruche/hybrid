@@ -23,7 +23,8 @@ reth-ethereum = { path = "../../CONTRIBUTIONS/reth/crates/ethereum/reth" }
 reth-tracing = { path = "../../CONTRIBUTIONS/reth/crates/tracing" }
 reth-ethereum-payload-builder = { path = "../../CONTRIBUTIONS/reth/crates/ethereum/payload" }
 
-alloy-evm = { version = "0.5.0", default-features = false }
+alloy-evm = { path = "../../CONTRIBUTIONS/alloy-evm/crates/evm", default-features = false }
+# alloy-evm = { version = "0.5.0", default-features = false }
 alloy-genesis = { version = "0.14.0", default-features = false }
 alloy-primitives = { version = "1.0.0", default-features = false, features = ["map-foldhash"] }
 

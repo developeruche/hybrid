@@ -93,7 +93,8 @@ where
             self.inner.set_tx(tx);
             self.inner.inspect_replay()
         } else {
-            self.inner.transact(tx)
+            self.inner.set_tx(tx);
+            self.inner.replay()
         }
     }
 

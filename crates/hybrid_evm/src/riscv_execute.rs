@@ -36,7 +36,8 @@ where
 {
     let (code, calldata) = match &frame.input {
         FrameInput::Call(call_inputs) => (bytecode, call_inputs.input.0.as_ref()),
-        FrameInput::Create(_) => {
+        FrameInput::Create(c) => {
+            println!("This is the create address: {:?}", c.created_address(0));
             let (code_size, init_code) = bytecode.split_at(4);
 
             let Some((_, bytecode)) = init_code.split_first() else {
@@ -66,5 +67,11 @@ where
 
     let interpreter_action =
         execute_riscv(&mut emulator, &mut frame.interpreter, evm).map_err(ERROR::from_string)?;
+
+    println!(
+        "This is the interpreter action after emu exec: {:?}",
+        interpreter_action.is_return()
+    );
+
     frame.process_next_action(evm, interpreter_action)
 }

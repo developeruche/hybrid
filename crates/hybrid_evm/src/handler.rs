@@ -6,7 +6,7 @@ use reth::revm::{
     },
     context_interface::{ContextTr, JournalTr},
     handler::{
-        EthFrame, EvmTr, FrameInitOrResult, Handler, PrecompileProvider,
+        EthFrame, EvmTr, FrameInitOrResult, FrameResult, Handler, ItemOrResult, PrecompileProvider,
         instructions::InstructionProvider,
     },
     inspector::{Inspector, InspectorEvmTr, InspectorHandler},
@@ -54,6 +54,42 @@ where
         evm: &mut Self::Evm,
     ) -> Result<FrameInitOrResult<Self::Frame>, Self::Error> {
         hybrid_frame_call(frame, evm)
+    }
+
+    #[inline]
+    fn run_exec_loop(
+        &mut self,
+        evm: &mut Self::Evm,
+        frame: Self::Frame,
+    ) -> Result<FrameResult, Self::Error> {
+        let mut frame_stack: Vec<Self::Frame> = vec![frame];
+        loop {
+            let frame = frame_stack.last_mut().unwrap();
+            let call_or_result = self.frame_call(frame, evm)?;
+
+            let result = match call_or_result {
+                ItemOrResult::Item(init) => {
+                    match self.frame_init(frame, evm, init)? {
+                        ItemOrResult::Item(new_frame) => {
+                            frame_stack.push(new_frame);
+                            continue;
+                        }
+                        // Do not pop the frame since no new frame was created
+                        ItemOrResult::Result(result) => result,
+                    }
+                }
+                ItemOrResult::Result(result) => {
+                    // Remove the frame that returned the result
+                    frame_stack.pop();
+                    result
+                }
+            };
+
+            let Some(frame) = frame_stack.last_mut() else {
+                return Ok(result);
+            };
+            self.frame_return_result(frame, evm, result)?;
+        }
     }
 }
 
