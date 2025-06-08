@@ -1,15 +1,14 @@
+#![allow(unused_mut)]
 //! Hybrid payload builder, responsible for building blocks containing EVM tx and RISC-V tx
-use std::sync::Arc;
-
 use alloy_evm::{
     block::{
         BlockExecutionError, BlockExecutor, BlockExecutorFactory, BlockExecutorFor, ExecutableTx,
         OnStateHook,
     },
     eth::{EthBlockExecutionCtx, EthBlockExecutor},
-    Database, EthEvm, EthEvmFactory, Evm, EvmEnv,
+    Database, Evm, EvmEnv,
 };
-use hybrid_evm::{eth_hybrid_evm::EthHybridEvm, evm::HybridEvm};
+use hybrid_evm::eth_hybrid_evm::EthHybridEvm;
 use reth::{
     api::{ConfigureEvm, FullNodeTypes, NextBlockEnvAttributes, NodeTypes, PayloadTypes},
     builder::{components::PayloadBuilderBuilder, BuilderContext},
@@ -30,6 +29,7 @@ use reth_ethereum::{
     node::node::EthereumPayloadBuilder,
     EthPrimitives, Receipt, TransactionSigned,
 };
+use std::sync::Arc;
 
 use crate::factory::HybridEvmFactory;
 

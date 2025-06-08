@@ -4,11 +4,7 @@
 
 use eth_riscv_interpreter::setup_from_elf;
 use reth::revm::{
-    Database,
-    context::{
-        ContextTr,
-        result::{EVMError, FromStringError, InvalidTransaction},
-    },
+    context::{ContextTr, JournalTr, result::FromStringError},
     handler::{
         ContextTrDbError, EthFrame, EvmTr, FrameInitOrResult, PrecompileProvider,
         instructions::InstructionProvider,
@@ -34,10 +30,14 @@ where
         >,
     ERROR: From<ContextTrDbError<EVM::Context>> + FromStringError,
 {
+    let mut last_created_address = None;
+
     let (code, calldata) = match &frame.input {
         FrameInput::Call(call_inputs) => (bytecode, call_inputs.input.0.as_ref()),
         FrameInput::Create(c) => {
-            println!("This is the create address: {:?}", c.created_address(0));
+            let account = evm.ctx().journal().load_account(c.caller).unwrap();
+            last_created_address = Some(c.created_address(account.info.nonce - 1));
+
             let (code_size, init_code) = bytecode.split_at(4);
 
             let Some((_, bytecode)) = init_code.split_first() else {
@@ -65,13 +65,13 @@ where
         }
     };
 
-    let interpreter_action =
-        execute_riscv(&mut emulator, &mut frame.interpreter, evm).map_err(ERROR::from_string)?;
-
-    println!(
-        "This is the interpreter action after emu exec: {:?}",
-        interpreter_action.is_return()
-    );
+    let interpreter_action = execute_riscv(
+        &mut emulator,
+        &mut frame.interpreter,
+        evm,
+        &last_created_address,
+    )
+    .map_err(ERROR::from_string)?;
 
     frame.process_next_action(evm, interpreter_action)
 }

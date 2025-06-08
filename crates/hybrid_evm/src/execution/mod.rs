@@ -5,14 +5,14 @@ use eth_riscv_syscalls::Syscall;
 use reth::{
     primitives::Log,
     revm::{
-        context::{ContextTr, JournalOutput, JournalTr, Transaction},
+        context::{ContextTr, Transaction},
         handler::{EvmTr, PrecompileProvider, instructions::InstructionProvider},
         interpreter::{
             Host, InstructionResult, Interpreter, InterpreterAction, InterpreterResult,
             interpreter::EthInterpreter,
             interpreter_types::{LoopControl, ReturnData},
         },
-        primitives::{Address, B256, Bytes, U256, address, alloy_primitives::Keccak256},
+        primitives::{Address, B256, Bytes, U256, alloy_primitives::Keccak256},
     },
 };
 use rvemu::{emulator::Emulator, exception::Exception};
@@ -29,6 +29,7 @@ pub fn execute_riscv<EVM>(
     emu: &mut Emulator,
     interpreter: &mut Interpreter,
     evm: &mut EVM,
+    last_created_contract: &Option<Address>,
 ) -> Result<InterpreterAction, String>
 where
     EVM: EvmTr<
@@ -42,7 +43,6 @@ where
     emu.cpu.is_count = true;
 
     let return_revert = |interpreter: &mut Interpreter, gas_used: u64| {
-        println!("A Revert Error Occur in riscv emu");
         let _ = interpreter.control.gas_mut().record_cost(gas_used);
         Ok(InterpreterAction::Return {
             result: InterpreterResult {
@@ -59,16 +59,11 @@ where
     loop {
         let run_result = emu.start();
 
-        println!("Running Emu loop");
-
         match run_result {
             Err(Exception::EnvironmentCallFromMMode) => {
                 let t0: u64 = emu.cpu.xregs.read(5);
 
-                println!("An EVN call was reached: {}", t0);
-
                 let Ok(syscall) = Syscall::try_from(t0 as u8) else {
-                    println!("ERROR: Noot an ENV call");
                     return return_revert(interpreter, interpreter.control.gas.spent());
                 };
 
@@ -168,12 +163,7 @@ where
                     Syscall::Create => return execute_create(emu, interpreter, host),
                     Syscall::ReturnCreateAddress => {
                         let dest_offset = emu.cpu.xregs.read(10);
-                        // let addr = rvemu
-                        //     .created_address
-                        //     .expect("Unable to get created address");
-                        let addr = Address::ZERO;
-                        println!("Emu tried to print created address");
-                        let addr = address!("0x5fbdb2315678afecb367f032d93f642f64180aa3");
+                        let addr = last_created_contract.unwrap_or_default();
 
                         // write return data to memory
                         let return_memory = emu

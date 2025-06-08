@@ -1,22 +1,14 @@
 //! Helper functions for the Hybrid EVM execution.
-
 use reth::revm::{
     context::CreateScheme,
     interpreter::{CreateInputs, FrameInput},
 };
-use reth::{
-    primitives::Log,
-    revm::{
-        context::{ContextTr, JournalOutput, JournalTr, Transaction},
-        handler::{EvmTr, PrecompileProvider, instructions::InstructionProvider},
-        interpreter::{
-            CallInputs, CallScheme, CallValue, Host, InstructionResult, Interpreter,
-            InterpreterAction, InterpreterResult,
-            interpreter::EthInterpreter,
-            interpreter_types::{LoopControl, ReturnData},
-        },
-        primitives::{Address, B256, Bytes, U256, alloy_primitives::Keccak256},
+use reth::revm::{
+    interpreter::{
+        CallInputs, CallScheme, CallValue, Host, InstructionResult, Interpreter, InterpreterAction,
+        InterpreterResult,
     },
+    primitives::{Address, Bytes, U256},
 };
 use rvemu::emulator::Emulator;
 use std::collections::BTreeMap;
@@ -75,8 +67,6 @@ pub fn execute_create(
     interpreter: &mut Interpreter,
     _host: &mut dyn Host,
 ) -> Result<InterpreterAction, String> {
-    println!("Running this create opcode on riscv");
-
     let value: u64 = emu.cpu.xregs.read(10);
 
     // Get initcode
@@ -115,7 +105,6 @@ pub fn execute_call(
     host: &mut dyn Host,
     is_static: bool,
 ) -> Result<InterpreterAction, String> {
-    println!("Running this call opcode on riscv");
     let a0: u64 = emu.cpu.xregs.read(10);
     let a1: u64 = emu.cpu.xregs.read(11);
     let a2: u64 = emu.cpu.xregs.read(12);
