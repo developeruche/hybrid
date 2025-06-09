@@ -4704,6 +4704,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "hybrid-node"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "clap",
+ "colored",
+ "eyre",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "vm",
+]
+
+[[package]]
 name = "hybrid_evm"
 version = "0.1.0"
 dependencies = [
@@ -6171,21 +6186,6 @@ dependencies = [
  "libc",
  "memoffset 0.7.1",
  "pin-utils",
-]
-
-[[package]]
-name = "node"
-version = "0.1.0"
-dependencies = [
- "alloy",
- "anyhow",
- "clap",
- "colored",
- "eyre",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.19",
- "vm",
 ]
 
 [[package]]
