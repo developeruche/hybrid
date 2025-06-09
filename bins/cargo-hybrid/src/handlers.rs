@@ -5,7 +5,7 @@ use colored::Colorize;
 use compile::run_contract_compilation;
 use fs_extra::dir::{self, CopyOptions};
 use indicatif::{ProgressBar, ProgressStyle};
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, process::Command};
 use toml_edit::{value, DocumentMut};
 use tracing::info;
 
@@ -98,6 +98,46 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
     println!("  cd {}", args.name);
     println!("  cargo hybrid build");
     println!("\nHappy coding! 🚀\n");
+
+    Ok(())
+}
+
+/// Start the hybrid node in development mode
+pub fn start_node() -> Result<()> {
+    info!("Starting hybrid node in development mode...");
+
+    println!(
+        "🚀 {} {}",
+        "Starting Hybrid Node".green().bold(),
+        "in development mode".cyan()
+    );
+
+    // Check if hybrid-node is installed
+    let status = Command::new("which").arg("hybrid-node").status();
+
+    if status.is_err() || !status.unwrap().success() {
+        return Err(anyhow!("'hybrid-node' command not found. Please make sure it's installed and available in your PATH."));
+    }
+
+    // Execute the hybrid-node command with the --dev flag
+    let child = Command::new("hybrid-node").arg("--dev").spawn()?;
+
+    // Print a message about how to stop the node
+    println!(
+        "\n💡 {} {}",
+        "Node is running.".green(),
+        "Press Ctrl+C to stop the node."
+    );
+
+    // Wait for the command to complete
+    let status = child.wait_with_output()?;
+
+    if !status.status.success() {
+        return Err(anyhow!(
+            "Node exited with an error. Status code: {:?}",
+            status.status.code()
+        ));
+    }
 
     Ok(())
 }

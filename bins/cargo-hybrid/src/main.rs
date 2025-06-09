@@ -6,7 +6,7 @@ mod utils;
 use anyhow::Result;
 use clap::Parser;
 use command::{BuildArgs, Cli, Commands, HybridSubcommands};
-use handlers::{build_contract, create_new_project, deploy_contract};
+use handlers::{build_contract, create_new_project, deploy_contract, start_node};
 use utils::init_logger;
 
 fn main() -> Result<()> {
@@ -28,6 +28,7 @@ fn main() -> Result<()> {
                 true,
             )?,
             HybridSubcommands::Deploy(args) => deploy_contract(&args)?,
+            HybridSubcommands::Node => start_node()?,
         },
         None => {
             println!("Usage: cargo hybrid <COMMAND>");

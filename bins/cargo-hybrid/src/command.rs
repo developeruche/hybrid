@@ -38,6 +38,9 @@ pub enum HybridSubcommands {
 
     /// Deploy a smart contract to the blockchain
     Deploy(DeployArgs),
+
+    /// Start the hybrid node in development mode
+    Node,
 }
 
 #[derive(Args)]
