@@ -1,12 +1,12 @@
 use reth::revm::{
-    Inspector,
     context::{ContextSetters, ContextTr, Evm, EvmData},
     handler::{
-        EthPrecompiles, EvmTr,
         instructions::{EthInstructions, InstructionProvider},
+        EthPrecompiles, EvmTr,
     },
-    inspector::{InspectorEvmTr, JournalExt, inspect_instructions},
-    interpreter::{Interpreter, InterpreterTypes, interpreter::EthInterpreter},
+    inspector::{inspect_instructions, InspectorEvmTr, JournalExt},
+    interpreter::{interpreter::EthInterpreter, Interpreter, InterpreterTypes},
+    Inspector,
 };
 
 /// HybridEvm variant of the EVM.

@@ -2718,8 +2718,8 @@ dependencies = [
  "anyhow",
  "clap",
  "colored",
- "compile",
  "fs_extra",
+ "hybrid-compile",
  "indicatif",
  "reqwest 0.11.27",
  "serde",
@@ -3039,18 +3039,6 @@ dependencies = [
  "rustversion",
  "ryu",
  "static_assertions",
-]
-
-[[package]]
-name = "compile"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "colored",
- "indicatif",
- "syn 1.0.109",
- "toml",
- "tracing",
 ]
 
 [[package]]
@@ -4706,6 +4694,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "hybrid-compile"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "colored",
+ "indicatif",
+ "syn 1.0.109",
+ "toml",
+ "tracing",
+]
+
+[[package]]
+name = "hybrid-evm"
+version = "0.1.0"
+dependencies = [
+ "alloy-evm",
+ "eth-riscv-interpreter",
+ "eth-riscv-syscalls",
+ "reth",
+ "rvemu",
+]
+
+[[package]]
 name = "hybrid-node"
 version = "0.1.0"
 dependencies = [
@@ -4714,21 +4725,27 @@ dependencies = [
  "clap",
  "colored",
  "eyre",
+ "hybrid-vm",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.19",
- "vm",
 ]
 
 [[package]]
-name = "hybrid_evm"
+name = "hybrid-vm"
 version = "0.1.0"
 dependencies = [
  "alloy-evm",
- "eth-riscv-interpreter",
- "eth-riscv-syscalls",
+ "alloy-genesis 0.14.0",
+ "alloy-primitives",
+ "anyhow",
+ "eyre",
+ "hybrid-evm",
  "reth",
- "rvemu",
+ "reth-ethereum",
+ "reth-ethereum-payload-builder",
+ "reth-tracing",
+ "serde_json",
 ]
 
 [[package]]
@@ -12182,23 +12199,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.101",
-]
-
-[[package]]
-name = "vm"
-version = "0.1.0"
-dependencies = [
- "alloy-evm",
- "alloy-genesis 0.14.0",
- "alloy-primitives",
- "anyhow",
- "eyre",
- "hybrid_evm",
- "reth",
- "reth-ethereum",
- "reth-ethereum-payload-builder",
- "reth-tracing",
- "serde_json",
 ]
 
 [[package]]

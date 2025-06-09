@@ -6,13 +6,13 @@ use reth::{
     primitives::Log,
     revm::{
         context::{ContextTr, Transaction},
-        handler::{EvmTr, PrecompileProvider, instructions::InstructionProvider},
+        handler::{instructions::InstructionProvider, EvmTr, PrecompileProvider},
         interpreter::{
-            Host, InstructionResult, Interpreter, InterpreterAction, InterpreterResult,
             interpreter::EthInterpreter,
             interpreter_types::{LoopControl, ReturnData},
+            Host, InstructionResult, Interpreter, InterpreterAction, InterpreterResult,
         },
-        primitives::{Address, B256, Bytes, U256, alloy_primitives::Keccak256},
+        primitives::{alloy_primitives::Keccak256, Address, Bytes, B256, U256},
     },
 };
 use rvemu::{emulator::Emulator, exception::Exception};
@@ -33,12 +33,12 @@ pub fn execute_riscv<EVM>(
 ) -> Result<InterpreterAction, String>
 where
     EVM: EvmTr<
-            Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
-            Instructions: InstructionProvider<
-                Context = EVM::Context,
-                InterpreterTypes = EthInterpreter,
-            >,
+        Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
+        Instructions: InstructionProvider<
+            Context = EVM::Context,
+            InterpreterTypes = EthInterpreter,
         >,
+    >,
 {
     emu.cpu.is_count = true;
 

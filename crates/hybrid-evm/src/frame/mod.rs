@@ -1,16 +1,16 @@
 //! This file holds modifications to the EVM frame to accomdate the Hybrid logic.
 use crate::riscv_execute::run_riscv_interpreter;
 use reth::revm::{
-    Database,
     context::{
-        ContextTr, JournalOutput, JournalTr,
         result::{EVMError, InvalidTransaction},
+        ContextTr, JournalOutput, JournalTr,
     },
     handler::{
-        EthFrame, EvmTr, Frame, FrameInitOrResult, PrecompileProvider,
-        instructions::InstructionProvider,
+        instructions::InstructionProvider, EthFrame, EvmTr, Frame, FrameInitOrResult,
+        PrecompileProvider,
     },
-    interpreter::{InterpreterResult, interpreter::EthInterpreter},
+    interpreter::{interpreter::EthInterpreter, InterpreterResult},
+    Database,
 };
 
 pub fn hybrid_frame_call<EVM>(
@@ -32,13 +32,13 @@ pub fn hybrid_frame_call<EVM>(
 >
 where
     EVM: EvmTr<
-            Context: ContextTr<Journal: JournalTr<FinalOutput = JournalOutput>>,
-            Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
-            Instructions: InstructionProvider<
-                Context = EVM::Context,
-                InterpreterTypes = EthInterpreter,
-            >,
+        Context: ContextTr<Journal: JournalTr<FinalOutput = JournalOutput>>,
+        Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
+        Instructions: InstructionProvider<
+            Context = EVM::Context,
+            InterpreterTypes = EthInterpreter,
         >,
+    >,
 {
     let bytecode_clone = frame.interpreter.bytecode.clone();
     let split_result = bytecode_clone.bytecode().split_first();

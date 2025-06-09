@@ -4,12 +4,12 @@
 
 use eth_riscv_interpreter::setup_from_elf;
 use reth::revm::{
-    context::{ContextTr, JournalTr, result::FromStringError},
+    context::{result::FromStringError, ContextTr, JournalTr},
     handler::{
-        ContextTrDbError, EthFrame, EvmTr, FrameInitOrResult, PrecompileProvider,
-        instructions::InstructionProvider,
+        instructions::InstructionProvider, ContextTrDbError, EthFrame, EvmTr, FrameInitOrResult,
+        PrecompileProvider,
     },
-    interpreter::{FrameInput, InterpreterResult, interpreter::EthInterpreter},
+    interpreter::{interpreter::EthInterpreter, FrameInput, InterpreterResult},
     primitives::alloy_primitives::U32,
 };
 
@@ -22,12 +22,12 @@ pub fn run_riscv_interpreter<EVM, ERROR>(
 ) -> Result<FrameInitOrResult<EthFrame<EVM, ERROR, EthInterpreter>>, ERROR>
 where
     EVM: EvmTr<
-            Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
-            Instructions: InstructionProvider<
-                Context = EVM::Context,
-                InterpreterTypes = EthInterpreter,
-            >,
+        Precompiles: PrecompileProvider<EVM::Context, Output = InterpreterResult>,
+        Instructions: InstructionProvider<
+            Context = EVM::Context,
+            InterpreterTypes = EthInterpreter,
         >,
+    >,
     ERROR: From<ContextTrDbError<EVM::Context>> + FromStringError,
 {
     let mut last_created_address = None;

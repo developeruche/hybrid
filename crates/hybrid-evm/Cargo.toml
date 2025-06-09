@@ -1,0 +1,19 @@
+[package]
+name = "hybrid-evm"
+description = "An implemenation of the hybrid-evm"
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+edition.workspace = true
+
+[dependencies]
+reth.workspace = true
+alloy-evm.workspace = true
+eth-riscv-interpreter = { git = "https://github.com/r55-eth/r55.git", branch = "main", version = "0.1.0"}
+eth-riscv-syscalls = { git = "https://github.com/r55-eth/r55.git", branch = "main", version = "0.1.0" }
+rvemu = { git="https://github.com/r55-eth/rvemu.git", version = "0.0.11"}
