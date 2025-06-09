@@ -1,5 +1,7 @@
 //! Handlers for the cargo-cli command
 use crate::command::{BuildArgs, DeployArgs, NewArgs};
+use crate::utils::deploy_riscv_bytecode;
+use alloy::primitives::hex;
 use anyhow::{anyhow, Result};
 use colored::Colorize;
 use compile::run_contract_compilation;
@@ -212,7 +214,18 @@ pub fn deploy_contract(args: &DeployArgs) -> Result<()> {
         ));
     }
 
-    info!("Deploying contract to {}", args.rpc.bold());
+    // Get the contract name from the binary file
+    let bin_path = &bin_files[0].path();
+    let contract_name = bin_path
+        .file_stem()
+        .and_then(|name| name.to_str())
+        .unwrap_or("unknown");
+
+    info!(
+        "Deploying contract '{}' to {}",
+        contract_name.bold(),
+        args.rpc.bold()
+    );
 
     // Set up the progress bar
     let pb = ProgressBar::new_spinner();
@@ -225,22 +238,38 @@ pub fn deploy_contract(args: &DeployArgs) -> Result<()> {
     pb.set_message("Connecting to network...");
     pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
-    // This is where you would call your deployment logic
-    // For now, we'll just simulate a deployment
-    std::thread::sleep(std::time::Duration::from_secs(2));
-    pb.set_message("Uploading contract bytecode...");
-    std::thread::sleep(std::time::Duration::from_secs(2));
-    pb.set_message("Waiting for confirmation...");
-    std::thread::sleep(std::time::Duration::from_secs(1));
+    // Read the bytecode from the binary file
+    pb.set_message(format!("Reading bytecode for '{}'...", contract_name));
+    let bytecode = fs::read(bin_path)?;
 
-    // Generate a fake contract address
-    let contract_address = "0x1234567890123456789012345678901234567890";
+    pb.set_message("Deploying contract to the blockchain...");
+
+    // Parse encoded arguments if provided
+    let encoded_args = match &args.encoded_args {
+        Some(hex_args) => {
+            // Remove 0x prefix if present
+            let clean_hex = hex_args.trim_start_matches("0x");
+
+            // Parse hex string to bytes
+            Some(
+                hex::decode(clean_hex)
+                    .map_err(|e| anyhow!("Failed to decode constructor arguments: {}", e))?,
+            )
+        }
+        None => None,
+    };
+
+    // Run the deployment logic using tokio runtime
+    let rt = tokio::runtime::Runtime::new()?;
+    let contract_address = rt.block_on(async {
+        deploy_riscv_bytecode(&args.rpc, &args.private_key, bytecode, encoded_args).await
+    })?;
 
     pb.finish_with_message("Contract deployed successfully!".green().to_string());
     println!(
         "\n🚀 {} {} {}\n",
         "Contract deployed at:".green().bold(),
-        contract_address.cyan(),
+        contract_address.to_string().cyan(),
         "🎉".green()
     );
 

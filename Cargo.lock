@@ -2714,6 +2714,7 @@ dependencies = [
 name = "cargo-hybrid"
 version = "0.1.0"
 dependencies = [
+ "alloy",
  "anyhow",
  "clap",
  "colored",
@@ -2724,6 +2725,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "tokio",
  "toml_edit",
  "tracing",
  "tracing-subscriber 0.3.19",

@@ -68,6 +68,18 @@ pub struct DeployArgs {
     pub out: String,
 
     /// RPC endpoint to deploy to
-    #[clap(long, default_value = "http://localhost:8545")]
+    #[clap(long, default_value = "http://127.0.0.1:8545")]
     pub rpc: String,
+
+    /// Private key to use for deployment
+    #[clap(
+        long,
+        default_value = "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+    )]
+    pub private_key: String,
+
+    /// Constructor arguments (hex encoded, with or without 0x prefix)
+    /// Example: --encoded-args 0000000000000000000000000000000000000000000000000000000000000020
+    #[clap(long)]
+    pub encoded_args: Option<String>,
 }
