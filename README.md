@@ -202,6 +202,14 @@ Common issues you may encounter:
 - **Error: Failed to decode constructor arguments**  
   Make sure the constructor arguments are properly hex encoded.
 
+## Acknowledgments
+
+This project was inspired by and builds upon the work of the r55 team. The `hybrid_evm` crate and parts of the VM implementation were adapted from the r55 project, with modifications to support our hybrid execution environment.
+
+- **r55 Project**: [https://github.com/r55-eth/r55](https://github.com/r55-eth/r55)
+
+Special thanks to the r55 team for their pioneering work in bringing RISC-V execution to the Ethereum ecosystem.
+
 ## License
 
 [MIT License](LICENSE)
