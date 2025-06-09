@@ -1,5 +1,5 @@
 [package]
-name = "node"
+name = "hybrid-node"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,9 +12,6 @@ eyre = { workspace = true }
 anyhow = { workspace = true }
 clap = { version = "4.5", features = ["derive"] }
 colored = { workspace = true }
-
-
-[dev-dependencies]
 alloy = { version = "1.0.6", features = [
     "eips",
     "full",
