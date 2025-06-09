@@ -1,12 +1,12 @@
 //! This is an encapcultion for the EVM
 use alloy_evm::{Evm, EvmEnv};
 use reth::revm::{
-    Context, Database, ExecuteEvm, InspectEvm, Inspector,
     context::{
-        BlockEnv, CfgEnv, TxEnv,
         result::{EVMError, HaltReason, ResultAndState},
+        BlockEnv, CfgEnv, TxEnv,
     },
-    primitives::{Address, Bytes, TxKind, U256, hardfork::SpecId},
+    primitives::{hardfork::SpecId, Address, Bytes, TxKind, U256},
+    Context, Database, ExecuteEvm, InspectEvm, Inspector,
 };
 use std::ops::{Deref, DerefMut};
 

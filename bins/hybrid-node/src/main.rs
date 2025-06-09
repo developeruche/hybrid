@@ -28,7 +28,7 @@ async fn start_node(is_dev: bool) -> Result<()> {
     );
 
     // Run the node using the vm crate's run_node function
-    vm::run_node(is_dev)
+    hybrid_vm::run_node(is_dev)
         .await
         .map_err(|e| eyre::eyre!("Node error: {}", e))?;
 
