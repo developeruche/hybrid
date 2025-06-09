@@ -37,6 +37,13 @@ The project is organized into the following directories:
 
 ### Prerequisites
 
+### mac-os (was unable to lay my hands on another pc... sorryy :) )
+```sh
+brew tap riscv-software-src/riscv
+brew install riscv-gnu-toolchain gettext
+rustup target add x86_64-unknown-linux-gnu
+```
+
 - Rust toolchain (stable)
 - Cargo package manager
 
