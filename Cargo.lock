@@ -2720,6 +2720,7 @@ dependencies = [
  "colored",
  "fs_extra",
  "hybrid-compile",
+ "include_dir",
  "indicatif",
  "reqwest 0.11.27",
  "serde",

@@ -10,6 +10,8 @@ repository = "https://github.com/developeruche/hybrid/tree/main/bins/cargo-hybri
 documentation = "https://github.com/developeruche/hybrid/tree/main/bins/cargo-hybrid"
 homepage = "https://github.com/developeruche/hybrid/tree/main/bins/cargo-hybrid"
 edition.workspace = true
+build = "build.rs"
+
 
 
 [dependencies]
@@ -27,6 +29,7 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 tempfile = "3.8"
 toml_edit = "0.22.26"
 tokio = { version = "1.28", features = ["full"] }
+include_dir = "0.7.3"
 alloy = { version = "1.0.6", features = [
     "eips",
     "full",
