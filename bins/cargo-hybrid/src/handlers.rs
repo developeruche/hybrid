@@ -6,28 +6,34 @@ use anyhow::{anyhow, Result};
 use colored::Colorize;
 use fs_extra::dir::{self, CopyOptions};
 use hybrid_compile::run_contract_compilation;
+use include_dir::{include_dir, Dir};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{fs, path::PathBuf, process::Command};
 use toml_edit::{value, DocumentMut};
 use tracing::info;
 
+// Include the templates directory at compile time
+static TEMPLATES_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/../../contracts");
+
 /// Create a new project from a template
 pub fn create_new_project(args: &NewArgs) -> Result<()> {
     // Validate the template
-    let template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .ok_or_else(|| anyhow!("Failed to find parent directory"))?
-        .parent()
-        .ok_or_else(|| anyhow!("Failed to find workspace root"))?
-        .join("contracts")
-        .join(&args.template);
-
-    if !template_path.exists() {
-        return Err(anyhow!(
-            "Template '{}' not found. Available templates: bare, storage, erc20",
-            args.template
-        ));
-    }
+    let template_dir = match TEMPLATES_DIR.get_dir(&args.template) {
+        Some(dir) => dir,
+        None => {
+            // Get available templates for the error message
+            let available_templates: Vec<String> = TEMPLATES_DIR
+                .dirs()
+                .map(|dir| dir.path().file_name().unwrap_or_default().to_string_lossy().to_string())
+                .collect();
+            
+            return Err(anyhow!(
+                "Template '{}' not found. Available templates: {}",
+                args.template,
+                available_templates.join(", ")
+            ));
+        }
+    };
 
     // Create the target directory
     let target_dir = PathBuf::from(&args.name);
@@ -52,17 +58,49 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
     pb.set_message("Copying template files...");
     pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
-    // Copy the template to the target directory
-    let mut copy_options = CopyOptions::new();
-    copy_options.overwrite = true;
-    copy_options.copy_inside = true;
-    dir::copy(&template_path, ".", &copy_options)?;
-
-    // Rename the directory
-    fs::rename(
-        PathBuf::from(&template_path.file_name().unwrap()),
-        &target_dir,
-    )?;
+    // Create the target directory
+    fs::create_dir_all(&target_dir)?;
+    
+    // Helper function to recursively extract files
+    fn extract_recursively(
+        dir: &include_dir::Dir,
+        target_dir: &PathBuf,
+        template_name: &str,
+    ) -> Result<()> {
+        // Process all files in the current directory
+        for file in dir.files() {
+            let rel_path = file.path().to_string_lossy();
+            // Get path relative to the template root
+            let file_path = rel_path.trim_start_matches(&format!("{}/", template_name));
+            let target_file_path = target_dir.join(file_path);
+            
+            // Create parent directories if needed
+            if let Some(parent) = target_file_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            
+            fs::write(target_file_path, file.contents())?;
+        }
+        
+        // Process all subdirectories
+        for subdir in dir.dirs() {
+            let rel_path = subdir.path().to_string_lossy();
+            // Get path relative to the template root
+            let dir_path = rel_path.trim_start_matches(&format!("{}/", template_name));
+            let target_subdir_path = target_dir.join(dir_path);
+            
+            // Create the subdirectory
+            fs::create_dir_all(&target_subdir_path)?;
+            
+            // Recursively extract its contents
+            extract_recursively(subdir, target_dir, template_name)?;
+        }
+        
+        Ok(())
+    }
+    
+    // Extract all template files
+    extract_recursively(template_dir, &target_dir, &args.template)?;
 
     // Update the project name in Cargo.toml
     let cargo_toml_path = target_dir.join("Cargo.toml");

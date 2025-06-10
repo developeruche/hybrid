@@ -9,7 +9,7 @@ A CLI tool for developing, building, and deploying Rust-based smart contracts on
 
 Cargo Hybrid extends the Rust ecosystem to support blockchain development by providing tools for:
 
-- Creating new smart contract projects from templates
+- Creating new smart contract projects from bundled templates
 - Building and compiling smart contracts
 - Checking contracts for errors
 - Deploying contracts to the Hybrid blockchain
@@ -21,6 +21,8 @@ Cargo Hybrid extends the Rust ecosystem to support blockchain development by pro
 
 - Rust and Cargo (install via [rustup](https://rustup.rs/))
 - `hybrid-node` for local development (must be in your PATH)
+
+All templates are bundled with the binary, so no additional downloads are required.
 
 ### Install cargo-hybrid
 
@@ -181,6 +183,9 @@ A typical development workflow might look like:
 - **Error: Failed to decode constructor arguments**  
   Make sure the constructor arguments are properly hex encoded.
 
+- **Error: Template 'X' not found**  
+  This should not happen as templates are bundled with the binary. If you encounter this error, please reinstall cargo-hybrid.
+
 ## Project Structure
 
 The cargo-hybrid tool is organized as follows:
@@ -192,9 +197,12 @@ cargo-hybrid/
 │   ├── handlers.rs      # Implementation of command handlers
 │   ├── main.rs          # Entry point for the CLI
 │   └── utils.rs         # Utility functions for deployment and logging
+├── build.rs             # Build script for bundling templates
 ├── Cargo.toml           # Dependencies and package configuration
 └── README.md            # This documentation
 ```
+
+Templates for new projects are bundled directly into the binary, so they're always available regardless of where you install cargo-hybrid.
 
 ## Contributing
 
