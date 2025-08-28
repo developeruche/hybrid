@@ -214,7 +214,6 @@ pub fn build_contract(args: &BuildArgs, check_only: bool) -> Result<()> {
             .template("{spinner:.green} {msg}")
             .unwrap(),
     );
-    pb.set_message("Compiling...");
     pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
     // Use the compile crate's run_contract_compilation function
