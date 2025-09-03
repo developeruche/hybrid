@@ -1,8 +1,11 @@
 //! This module manages the memory of the emulator
 
 use crate::bus::DRAM_BASE;
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::exception::Exception;
-use crate::primitives::constants::RAM_SIZE;
+
+/// Default memory size (1GiB).
+pub const DRAM_SIZE: u64 = 1024 * 1024 * 1024;
 
 /// The memory used by the emulator.
 #[derive(Debug)]
@@ -15,7 +18,7 @@ impl Dram {
     /// Create a new memory object with default memory size.
     pub fn new() -> Self {
         Self {
-            dram: vec![0; RAM_SIZE as usize],
+            dram: vec![0; DRAM_SIZE as usize],
             code_size: 0,
         }
     }

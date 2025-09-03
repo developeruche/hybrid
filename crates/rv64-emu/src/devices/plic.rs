@@ -13,8 +13,8 @@
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_plic.h
 
 use crate::bus::PLIC_BASE;
+use crate::cpu::WORD;
 use crate::exception::Exception;
-use crate::primitives::constants::WORD;
 
 /// The address for interrupt source priority. 1024 4-byte registers exist. Each interrupt into the
 /// PLIC has a configurable priority, from 1-7, with 7 being the highest priority. A value of 0

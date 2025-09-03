@@ -1,7 +1,6 @@
 use crate::{
-    cpu::CPU,
+    cpu::{CPU, DOUBLEWORD, WORD},
     exception::Exception,
-    primitives::constants::{DOUBLEWORD, WORD},
 };
 
 /// Execute a compressed instruction. Raised an exception if something is wrong, otherwise,

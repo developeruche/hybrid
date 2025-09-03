@@ -11,8 +11,8 @@ use std::sync::{
 use std::thread;
 
 use crate::bus::{UART_BASE, UART_SIZE};
+use crate::cpu::BYTE;
 use crate::exception::Exception;
-use crate::primitives::constants::BYTE;
 
 /// The interrupt request of UART.
 pub const UART_IRQ: u64 = 10;

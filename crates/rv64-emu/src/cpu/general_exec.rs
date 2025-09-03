@@ -1,4 +1,4 @@
-use crate::primitives::constants::{Mode, BYTE, DOUBLEWORD, HALFWORD, WORD};
+use crate::cpu::{Mode, BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::reg::csr::{
     MEPC, MSTATUS_MIE, MSTATUS_MPIE, MSTATUS_MPP, MSTATUS_MPRV, SATP, SEPC, XSTATUS_SIE,
     XSTATUS_SPIE, XSTATUS_SPP,

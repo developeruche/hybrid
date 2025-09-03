@@ -1,10 +1,12 @@
+use rv64_emu::emu::Emu;
+
 mod helper;
 
-use rvemu::emulator::Emulator;
+
 
 #[test]
 fn flw_rd_offset_rs1() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
     let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
@@ -15,13 +17,13 @@ fn flw_rd_offset_rs1() {
     let expected_fregs = helper::create_fregs(vec![]);
 
     // Fix f31
-    //assert_eq!(0x0f130020, cpu.fregs.read(31).to_bits());
+    //assert_eq!(0x0f130020, cpu.float_regs.read(31).to_bits());
     helper::run(&mut emu, data, &expected_xregs, &expected_fregs);
 }
 
 #[test]
 fn fsw_rs2_offset_rs1() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
     let data = vec![
         0x93, 0x0f, 0x20, 0x00, // addi x31, x0, 2
@@ -37,11 +39,11 @@ fn fsw_rs2_offset_rs1() {
 
 #[test]
 fn fmadds_rd_rs1_rs2_rs3() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(28, -0.5);
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 1.2);
+    emu.cpu.float_regs.write(28, -0.5);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 1.2);
 
     let _data = vec![
         0xc3, 0x0f, 0xdf, 0xe1, // fmadd.s f31, f30, f29, f28
@@ -55,11 +57,11 @@ fn fmadds_rd_rs1_rs2_rs3() {
 
 #[test]
 fn fmsubs_rd_rs1_rs2_rs3() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(28, -0.5);
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 1.2);
+    emu.cpu.float_regs.write(28, -0.5);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 1.2);
 
     let _data = vec![
         0xc7, 0x0f, 0xdf, 0xe1, // fmsub.s f31, f30, f29, f28
@@ -73,11 +75,11 @@ fn fmsubs_rd_rs1_rs2_rs3() {
 
 #[test]
 fn fnmadds_rd_rs1_rs2_rs3() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(28, -0.5);
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 1.2);
+    emu.cpu.float_regs.write(28, -0.5);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 1.2);
 
     let _data = vec![
         0xcb, 0x0f, 0xdf, 0xe1, // fnmadd.s f31, f30, f29, f28
@@ -91,11 +93,11 @@ fn fnmadds_rd_rs1_rs2_rs3() {
 
 #[test]
 fn fnmsubs_rd_rs1_rs2_rs3() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(28, -0.5);
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 1.2);
+    emu.cpu.float_regs.write(28, -0.5);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 1.2);
 
     let _data = vec![
         0xcf, 0x0f, 0xdf, 0xe1, // fnmsub.s f31, f30, f29, f28
@@ -109,10 +111,10 @@ fn fnmsubs_rd_rs1_rs2_rs3() {
 
 #[test]
 fn fadds_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 2.5);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 2.5);
 
     let _data = vec![
         0xd3, 0x0f, 0xdf, 0x01, // fadd.s f31, f30, f29
@@ -126,10 +128,10 @@ fn fadds_rd_rs1_rs2() {
 
 #[test]
 fn fsubs_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 2.8);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 2.8);
 
     let _data = vec![
         0xd3, 0x0f, 0xdf, 0x09, // fsub.s f31, f30, f29
@@ -143,10 +145,10 @@ fn fsubs_rd_rs1_rs2() {
 
 #[test]
 fn fmuls_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, -1.2);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, -1.2);
 
     let _data = vec![
         0xd3, 0x0f, 0xdf, 0x11, // fmul.s f31, f30, f29
@@ -160,10 +162,10 @@ fn fmuls_rd_rs1_rs2() {
 
 #[test]
 fn fdivs_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, -1.2);
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(29, -1.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let _data = vec![
         0xd3, 0x0f, 0xdf, 0x19, // fdiv.s f31, f30, f29
@@ -177,10 +179,10 @@ fn fdivs_rd_rs1_rs2() {
 
 #[test]
 fn fsgnjs_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, -1.2);
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(29, -1.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let data = vec![
         0xd3, 0x0f, 0xdf, 0x21, // fsgnj.s f31, f30, f29
@@ -193,10 +195,10 @@ fn fsgnjs_rd_rs1_rs2() {
 
 #[test]
 fn fsgnjns_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, -1.2);
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(29, -1.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let data = vec![
         0xd3, 0x1f, 0xdf, 0x21, // fsgnjn.s f31, f30, f29
@@ -209,10 +211,10 @@ fn fsgnjns_rd_rs1_rs2() {
 
 #[test]
 fn fsgnjxs_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, -1.2);
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(29, -1.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let _data = vec![
         0xd3, 0x2f, 0xdf, 0x21, // fsgnjx.s f31, f30, f29
@@ -226,10 +228,10 @@ fn fsgnjxs_rd_rs1_rs2() {
 
 #[test]
 fn fmins_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, -1.2);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, -1.2);
 
     let data = vec![
         0xd3, 0x0f, 0xdf, 0x29, // fmin.s f31, f30, f29
@@ -242,10 +244,10 @@ fn fmins_rd_rs1_rs2() {
 
 #[test]
 fn fmaxs_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, -1.2);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, -1.2);
 
     let data = vec![
         0xd3, 0x1f, 0xdf, 0x29, // fmax.s f31, f30, f29
@@ -258,9 +260,9 @@ fn fmaxs_rd_rs1_rs2() {
 
 #[test]
 fn fsqrts_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let data = vec![
         0xd3, 0x0f, 0x0f, 0x58, // fmax.s f31, f30
@@ -273,10 +275,10 @@ fn fsqrts_rd_rs1_rs2() {
 
 #[test]
 fn fles_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let data = vec![
         0xd3, 0x0f, 0xdf, 0xa1, // fle.s f31, f30, f29
@@ -289,10 +291,10 @@ fn fles_rd_rs1_rs2() {
 
 #[test]
 fn flts_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, -1.2);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, -1.2);
 
     let data = vec![
         0xd3, 0x1f, 0xdf, 0xa1, // flt.s f31, f30, f29
@@ -305,10 +307,10 @@ fn flts_rd_rs1_rs2() {
 
 #[test]
 fn feqs_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(29, 4.2);
-    emu.cpu.fregs.write(30, 4.2);
+    emu.cpu.float_regs.write(29, 4.2);
+    emu.cpu.float_regs.write(30, 4.2);
 
     let data = vec![
         0xd3, 0x2f, 0xdf, 0xa1, // feq.s f31, f30, f29
@@ -321,9 +323,9 @@ fn feqs_rd_rs1_rs2() {
 
 #[test]
 fn fcvtws_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(31, -4.2);
+    emu.cpu.float_regs.write(31, -4.2);
 
     let data = vec![
         0xd3, 0x8f, 0x0f, 0xc0, // fcvt.w.s x31, f31 (rm: 000)
@@ -336,9 +338,9 @@ fn fcvtws_rd_rs1_rs2() {
 
 #[test]
 fn fcvtwus_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(31, 4.2);
+    emu.cpu.float_regs.write(31, 4.2);
 
     let data = vec![
         0xd3, 0x8f, 0x1f, 0xc0, // fcvt.wu.s x31, f31 (rm: 000)
@@ -351,9 +353,9 @@ fn fcvtwus_rd_rs1_rs2() {
 
 #[test]
 fn fcvtsw_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.xregs.write(31, -4 as i64 as u64);
+    emu.cpu.int_regs.write(31, -4 as i64 as u64);
 
     let data = vec![
         0xd3, 0x8f, 0x0f, 0xd0, // fcvt.s.w x31, f31 (rm: 000)
@@ -366,9 +368,9 @@ fn fcvtsw_rd_rs1_rs2() {
 
 #[test]
 fn fcvtswu_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.xregs.write(31, 4);
+    emu.cpu.int_regs.write(31, 4);
 
     let data = vec![
         0xd3, 0x8f, 0x1f, 0xd0, // fcvt.s.wu x31, f31 (rm: 000)
@@ -381,9 +383,9 @@ fn fcvtswu_rd_rs1_rs2() {
 
 #[test]
 fn fmvxw_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(31, 4.0);
+    emu.cpu.float_regs.write(31, 4.0);
 
     let data = vec![
         0xd3, 0x8f, 0x0f, 0xe0, // fmv.x.w x31, f31
@@ -396,9 +398,9 @@ fn fmvxw_rd_rs1_rs2() {
 
 #[test]
 fn fclasss_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.fregs.write(31, std::f64::INFINITY);
+    emu.cpu.float_regs.write(31, std::f64::INFINITY);
 
     let data = vec![
         0xd3, 0x9f, 0x0f, 0xe0, // fclass.s x31, f31
@@ -411,9 +413,9 @@ fn fclasss_rd_rs1_rs2() {
 
 #[test]
 fn fmvwx_rd_rs1_rs2() {
-    let mut emu = Emulator::new();
+    let mut emu = Emu::new();
 
-    emu.cpu.xregs.write(31, 4);
+    emu.cpu.int_regs.write(31, 4);
 
     let data = vec![
         0xd3, 0x8f, 0x0f, 0xf0, // fmv.w.x x31, f31

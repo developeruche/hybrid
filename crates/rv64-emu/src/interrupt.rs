@@ -1,8 +1,7 @@
 //! The interrupt module contains all the interrupt kinds and the function to handle interrupts.
 
 use crate::{
-    cpu::CPU,
-    primitives::constants::Mode,
+    cpu::{Mode, CPU},
     reg::csr::{
         MCAUSE, MEPC, MIDELEG, MSTATUS_MIE, MSTATUS_MPIE, MSTATUS_MPP, MTVAL, MTVEC, SCAUSE, SEPC,
         STVAL, STVEC, XSTATUS_SIE, XSTATUS_SPIE, XSTATUS_SPP,

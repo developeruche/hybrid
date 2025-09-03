@@ -2,8 +2,7 @@
 
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio_blk::Virtio};
 use crate::exception::Exception;
-use crate::mem::Dram;
-use crate::primitives::constants::RAM_SIZE;
+use crate::mem::{Dram, DRAM_SIZE};
 use crate::rom::Rom;
 use core::ops::Range;
 
@@ -43,7 +42,7 @@ const VIRTIO_END: u64 = VIRTIO_BASE + 0x1000;
 /// The address which DRAM starts.
 pub const DRAM_BASE: u64 = 0x8000_0000;
 /// The address which DRAM ends.
-const DRAM_END: u64 = DRAM_BASE + RAM_SIZE;
+const DRAM_END: u64 = DRAM_BASE + DRAM_SIZE;
 
 /// The system bus.
 #[derive(Debug)]

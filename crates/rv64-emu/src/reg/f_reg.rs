@@ -1,17 +1,17 @@
 //! This module handles the Registers (Floating Point)
-use crate::primitives::constants::NUM_REGISTERS;
+use crate::cpu::REGISTERS_COUNT;
 
 /// RV64 floating point register
 #[derive(Debug)]
 pub struct FloatRegister {
-    regs: [f64; NUM_REGISTERS],
+    regs: [f64; REGISTERS_COUNT],
 }
 
 impl FloatRegister {
     /// Create a new `FRegisters` object.
     pub fn new() -> Self {
         Self {
-            regs: [0.0; NUM_REGISTERS],
+            regs: [0.0; REGISTERS_COUNT],
         }
     }
 
@@ -26,7 +26,6 @@ impl FloatRegister {
     }
 }
 
-#[cfg(feature = "std")]
 impl core::fmt::Display for FloatRegister {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let abi = [
@@ -42,7 +41,7 @@ impl core::fmt::Display for FloatRegister {
             " ft8", " ft9", "ft10", "ft11",
         ];
         let mut output = String::from("");
-        for i in (0..NUM_REGISTERS).step_by(4) {
+        for i in (0..REGISTERS_COUNT).step_by(4) {
             output = format!(
                 "{}\n{}",
                 output,

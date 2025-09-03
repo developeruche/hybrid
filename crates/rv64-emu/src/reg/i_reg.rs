@@ -1,18 +1,20 @@
 //! This module handles the Registers (Intergers)
-use crate::primitives::constants::{NUM_REGISTERS, POINTER_TO_DTB, RAM_BASE, RAM_SIZE};
+
+use crate::{bus::DRAM_BASE, cpu::{POINTER_TO_DTB, REGISTERS_COUNT}, mem::DRAM_SIZE};
+
 
 /// RV64 interger register
 #[derive(Debug)]
 pub struct IntRegister {
-    regs: [u64; NUM_REGISTERS],
+    regs: [u64; REGISTERS_COUNT],
 }
 
 impl IntRegister {
     /// Function creates new interger register
     pub fn new() -> Self {
-        let mut regs = [0; NUM_REGISTERS];
+        let mut regs = [0; REGISTERS_COUNT];
         // The stack pointer is set in the default maximum memory size + the start address of dram.
-        regs[2] = RAM_BASE + RAM_SIZE;
+        regs[2] = DRAM_BASE + DRAM_SIZE;
         // From riscv-pk:
         // https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
         //   save a0 and a1; arguments from previous boot loader stage:
@@ -44,7 +46,6 @@ impl IntRegister {
     }
 }
 
-#[cfg(feature = "std")]
 impl core::fmt::Display for IntRegister {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let abi = [
@@ -53,7 +54,7 @@ impl core::fmt::Display for IntRegister {
             " s6 ", " s7 ", " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
         ];
         let mut output = String::from("");
-        for i in (0..NUM_REGISTERS).step_by(4) {
+        for i in (0..REGISTERS_COUNT).step_by(4) {
             output = format!(
                 "{}\n{}",
                 output,

@@ -8,6 +8,5 @@ pub mod emu;
 pub mod exception;
 pub mod interrupt;
 pub mod mem;
-pub mod primitives;
 pub mod reg;
 pub mod rom;

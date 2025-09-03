@@ -4,7 +4,6 @@ use crate::{
     bus::MROM_BASE,
     dtb::dtb,
     exception::Exception,
-    primitives::constants::{BYTE, DOUBLEWORD, HALFWORD, WORD},
 };
 
 /// RV64EMU read only memory

@@ -8,9 +8,6 @@ use crate::{
     },
     exception::Exception,
     interrupt::Interrupt,
-    primitives::constants::{
-        AccessType, Mode, DOUBLEWORD, HALFWORD, NUM_REGISTERS, PAGE_SIZE, WORD,
-    },
     reg::{
         csr::{
             state::State, MEIP_BIT, MIE, MIP, MSIP_BIT, MSTATUS_MIE, MSTATUS_MPP, MSTATUS_MPRV,
@@ -24,6 +21,47 @@ use std::collections::BTreeMap;
 
 pub mod compressed_exec;
 pub mod general_exec;
+
+
+/// The number of registers.
+pub const REGISTERS_COUNT: usize = 32;
+/// The page size (4 KiB) for the virtual memory system.
+const PAGE_SIZE: u64 = 4096;
+
+/// 8 bits. 1 byte.
+pub const BYTE: u8 = 8;
+/// 16 bits. 2 bytes.
+pub const HALFWORD: u8 = 16;
+/// 32 bits. 4 bytes.
+pub const WORD: u8 = 32;
+/// 64 bits. 8 bytes.
+pub const DOUBLEWORD: u8 = 64;
+
+/// riscv-pk is passing x10 and x11 registers to kernel. x11 is expected to have the pointer to DTB.
+/// https://github.com/riscv/riscv-pk/blob/master/machine/mentry.S#L233-L235
+pub const POINTER_TO_DTB: u64 = 0x1020;
+
+
+/// Access type that is used in the virtual address translation process. It decides which exception
+/// should raises (InstructionPageFault, LoadPageFault or StoreAMOPageFault).
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum AccessType {
+    /// Raises the exception InstructionPageFault. It is used for an instruction fetch.
+    Instruction,
+    /// Raises the exception LoadPageFault.
+    Load,
+    /// Raises the exception StoreAMOPageFault.
+    Store,
+}
+
+/// The privileged mode.
+#[derive(Debug, PartialEq, PartialOrd, Eq, Copy, Clone)]
+pub enum Mode {
+    User = 0b00,
+    Supervisor = 0b01,
+    Machine = 0b11,
+    Debug,
+}
 
 #[derive(Debug)]
 pub struct CPU {
@@ -81,7 +119,7 @@ impl CPU {
         self.pc = 0;
         self.mode = Mode::Machine;
         self.state.reset();
-        for i in 0..NUM_REGISTERS {
+        for i in 0..REGISTERS_COUNT {
             self.int_regs.write(i as u64, 0);
             self.float_regs.write(i as u64, 0.0);
         }

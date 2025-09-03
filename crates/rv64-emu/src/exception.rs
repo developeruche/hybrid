@@ -1,8 +1,7 @@
 //! The exception module contains all the exception kinds and the function to handle exceptions.
 
 use crate::{
-    cpu::CPU,
-    primitives::constants::Mode,
+    cpu::{Mode, CPU},
     reg::csr::{
         MCAUSE, MEDELEG, MEPC, MSTATUS_MIE, MSTATUS_MPIE, MSTATUS_MPP, MTVAL, MTVEC, SCAUSE, SEPC,
         STVAL, STVEC, XSTATUS_SIE, XSTATUS_SPIE, XSTATUS_SPP,

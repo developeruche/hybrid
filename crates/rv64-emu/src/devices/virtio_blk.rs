@@ -6,9 +6,8 @@
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
 use crate::bus::VIRTIO_BASE;
-use crate::cpu::CPU;
+use crate::cpu::{BYTE, CPU, DOUBLEWORD, HALFWORD, WORD};
 use crate::exception::Exception;
-use crate::primitives::constants::{BYTE, DOUBLEWORD, HALFWORD, WORD};
 
 /// The interrupt request of virtio.
 pub const VIRTIO_IRQ: u64 = 1;
