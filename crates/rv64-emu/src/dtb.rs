@@ -31,13 +31,9 @@
 //! - [RISC-V ISA Simulator DTS Example](https://github.com/riscv/riscv-isa-sim/blob/66b44bfbedda562a32e4a2cd0716afbf731b69cd/riscv/dts.cc#L38-L54)
 //!
 
-#[cfg(feature = "std")]
 use std::fs::File;
-#[cfg(feature = "std")]
 use std::io::prelude::*;
-#[cfg(feature = "std")]
 use std::io::Write;
-#[cfg(feature = "std")]
 use std::process::Command;
 
 pub const DTS_FILE_NAME: &str = "rvemu.dts";
@@ -62,8 +58,7 @@ pub const DTB_FILE_NAME: &str = "rvemu.dtb";
 /// ```
 /// create_dts()?;
 /// ```
-#[cfg(feature = "std")]
-fn create_dts() -> std::io::Result<()> {
+pub fn create_dts() -> std::io::Result<()> {
     // TODO: Make this content more flexible depending on the number of cpus.
     // Reference code is https://github.com/riscv/riscv-isa-sim/blob/66b44bfbedda562a32e4a2cd0716afbf731b69cd/riscv/dts.cc#L38-L54
     let content = r#"/dts-v1/;
@@ -176,8 +171,7 @@ fn create_dts() -> std::io::Result<()> {
 /// ```
 /// compile_dts()?;
 /// ```
-#[cfg(feature = "std")]
-fn compile_dts() -> std::io::Result<()> {
+pub fn compile_dts() -> std::io::Result<()> {
     // dtc -I dts -O dtb -o <FILE_NAME>.dtb <FILE_NAME>.dts
     Command::new("dtc")
         .args(&["-I", "dts", "-O", "dtb", "-o", DTB_FILE_NAME, DTS_FILE_NAME])
@@ -198,8 +192,7 @@ fn compile_dts() -> std::io::Result<()> {
 /// # Example
 /// ```
 /// let dtb_bytes = dtb()?;
-#[cfg(feature = "std")]
-fn dtb() -> std::io::Result<Vec<u8>> {
+pub fn dtb() -> std::io::Result<Vec<u8>> {
     create_dts()?;
     compile_dts()?;
 
