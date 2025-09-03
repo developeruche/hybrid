@@ -36,3 +36,18 @@ pub enum Mode {
     Machine = 0b11,
     Debug,
 }
+
+/// The page size (4 KiB) for the virtual memory system.
+pub const PAGE_SIZE: u64 = 4096;
+
+/// Access type that is used in the virtual address translation process. It decides which exception
+/// should raises (InstructionPageFault, LoadPageFault or StoreAMOPageFault).
+#[derive(Debug, PartialEq, PartialOrd)]
+pub enum AccessType {
+    /// Raises the exception InstructionPageFault. It is used for an instruction fetch.
+    Instruction,
+    /// Raises the exception LoadPageFault.
+    Load,
+    /// Raises the exception StoreAMOPageFault.
+    Store,
+}
