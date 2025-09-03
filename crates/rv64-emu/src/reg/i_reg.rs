@@ -44,6 +44,7 @@ impl IntRegister {
     }
 }
 
+#[cfg(feature = "std")]
 impl core::fmt::Display for IntRegister {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let abi = [

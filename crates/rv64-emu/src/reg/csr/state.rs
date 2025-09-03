@@ -181,6 +181,7 @@ impl State {
     }
 }
 
+#[cfg(feature = "std")]
 impl core::fmt::Display for State {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(

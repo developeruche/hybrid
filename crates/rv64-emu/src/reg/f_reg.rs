@@ -26,6 +26,7 @@ impl FloatRegister {
     }
 }
 
+#[cfg(feature = "std")]
 impl core::fmt::Display for FloatRegister {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let abi = [
