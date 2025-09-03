@@ -26,4 +26,13 @@ pub const RAM_BASE: u64 = 0x8000_0000;
 pub const RAM_SIZE: u64 = 0x40000000;
 
 /// An address where the RAM mem ends
-const RAM_END: u64 = RAM_BASE + RAM_SIZE;
+pub const RAM_END: u64 = RAM_BASE + RAM_SIZE;
+
+/// The privileged mode.
+#[derive(Debug, PartialEq, PartialOrd, Eq, Copy, Clone)]
+pub enum Mode {
+    User = 0b00,
+    Supervisor = 0b01,
+    Machine = 0b11,
+    Debug,
+}
