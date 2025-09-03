@@ -1,11 +1,8 @@
 //! The exception module contains all the exception kinds and the function to handle exceptions.
 
 use crate::{
-    cpu::{Mode, CPU},
-    reg::csr::{
-        MCAUSE, MEDELEG, MEPC, MSTATUS_MIE, MSTATUS_MPIE, MSTATUS_MPP, MTVAL, MTVEC, SCAUSE, SEPC,
-        STVAL, STVEC, XSTATUS_SIE, XSTATUS_SPIE, XSTATUS_SPP,
-    },
+    cpu::{Cpu, Mode},
+    csr::*,
 };
 
 /// All the exception kinds.
@@ -111,7 +108,7 @@ impl Exception {
     }
 
     /// Update CSRs and the program counter depending on an exception.
-    pub fn take_trap(&self, cpu: &mut CPU) -> Trap {
+    pub fn take_trap(&self, cpu: &mut Cpu) -> Trap {
         // 1.2 Privilege Levels
         // "Traps that increase privilege level are termed vertical traps, while traps that remain
         // at the same privilege level are termed horizontal traps."

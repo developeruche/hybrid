@@ -1,4 +1,4 @@
-//! This module manages the memory of the emulator
+//! The memory module contains the memory structure and implementation to read/write the memory.
 
 use crate::bus::DRAM_BASE;
 use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};

@@ -1,8 +1,9 @@
-//! This module manages the bus of the emulator
+//! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
+//! devices.
 
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio_blk::Virtio};
+use crate::dram::{Dram, DRAM_SIZE};
 use crate::exception::Exception;
-use crate::mem::{Dram, DRAM_SIZE};
 use crate::rom::Rom;
 use core::ops::Range;
 
@@ -45,7 +46,6 @@ pub const DRAM_BASE: u64 = 0x8000_0000;
 const DRAM_END: u64 = DRAM_BASE + DRAM_SIZE;
 
 /// The system bus.
-#[derive(Debug)]
 pub struct Bus {
     pub clint: Clint,
     pub plic: Plic,
@@ -102,7 +102,7 @@ impl Bus {
             _ => Err(Exception::StoreAMOAccessFault),
         }
     }
-
+    
     pub fn get_dram_slice(&mut self, range: Range<u64>) -> Result<&mut [u8], Exception> {
         let range = (range.start - DRAM_BASE) as usize..(range.end as usize - DRAM_BASE as usize);
         self.dram

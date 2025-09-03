@@ -1,23 +1,27 @@
-//! Emulator module for RV64
+//! The emulator module represents an entire computer.
 
-use crate::cpu::CPU;
+use crate::cpu::Cpu;
 use crate::exception::Trap;
 
-#[derive(Debug)]
-pub struct Emu {
+/// The emulator to hold a CPU.
+pub struct Emulator {
     /// The CPU which is the core implementation of this emulator.
-    pub cpu: CPU,
+    pub cpu: Cpu,
     /// The debug flag. Output messages if it's true, otherwise output nothing.
     pub is_debug: bool,
 }
 
-impl Emu {
-    pub fn new() -> Self {
-        Emu { cpu: CPU::new(), is_debug: false, }
+impl Emulator {
+    /// Constructor for an emulator.
+    pub fn new() -> Emulator {
+        Self {
+            cpu: Cpu::new(),
+            is_debug: false,
+        }
     }
 
-    /// Restart the emulator.
-    pub fn restart(&mut self) {
+    /// Reset CPU state.
+    pub fn reset(&mut self) {
         self.cpu.reset()
     }
 
@@ -36,47 +40,8 @@ impl Emu {
         self.cpu.pc = pc;
     }
 
-    /// Start executing the emulator.
-    pub fn start(&mut self) {
-        if self.is_debug || self.cpu.is_count {
-            self.debug_start();
-        }
-        
-        loop {
-            // Run a cycle on peripheral devices.
-            self.cpu.devices_increment();
-
-            // Take an interrupt.
-            match self.cpu.check_pending_interrupt() {
-                Some(interrupt) => interrupt.take_trap(&mut self.cpu),
-                None => {}
-            }
-
-            // Execute an instruction.
-            let trap = match self.cpu.execute() {
-                Ok(_) => {
-                    // Return a placeholder trap.
-                    Trap::Requested
-                }
-                Err(exception) => exception.take_trap(&mut self.cpu),
-            };
-
-            match trap {
-                Trap::Fatal => {
-                    println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
-                    return;
-                }
-                _ => {}
-            }
-        }
-    }
-    
-    
     /// Start executing the emulator with limited range of program. This method is for test.
     /// No interrupts happen.
-    /// 
-    // /// This only only runs in test mode.
-    // #[cfg(test)]
     pub fn test_start(&mut self, start: u64, end: u64) {
         println!("----- test start -----");
         let mut count = 0;
@@ -134,6 +99,41 @@ impl Emu {
                             self.cpu.pre_inst,
                         );
                     }
+                    // Return a placeholder trap.
+                    Trap::Requested
+                }
+                Err(exception) => exception.take_trap(&mut self.cpu),
+            };
+
+            match trap {
+                Trap::Fatal => {
+                    println!("pc: {:#x}, trap {:#?}", self.cpu.pc, trap);
+                    return;
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Start executing the emulator.
+    pub fn start(&mut self) {
+        if self.is_debug || self.cpu.is_count {
+            self.debug_start();
+        }
+
+        loop {
+            // Run a cycle on peripheral devices.
+            self.cpu.devices_increment();
+
+            // Take an interrupt.
+            match self.cpu.check_pending_interrupt() {
+                Some(interrupt) => interrupt.take_trap(&mut self.cpu),
+                None => {}
+            }
+
+            // Execute an instruction.
+            let trap = match self.cpu.execute() {
+                Ok(_) => {
                     // Return a placeholder trap.
                     Trap::Requested
                 }

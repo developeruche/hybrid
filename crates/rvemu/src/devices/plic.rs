@@ -64,7 +64,6 @@ const CONTEXT_OFFSET: u64 = 0x1000;
 const SOURCE_NUM: u64 = 1024;
 
 /// The platform-level-interrupt controller (PLIC).
-#[derive(Debug)]
 pub struct Plic {
     /// The interrupt priority for each interrupt source. A priority value of 0 is reserved to mean
     /// "never interrupt" and effectively disables the interrupt. Priority 1 is the lowest active

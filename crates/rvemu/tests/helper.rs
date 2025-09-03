@@ -1,7 +1,7 @@
-use rv64_emu::bus::DRAM_BASE;
-use rv64_emu::cpu::{POINTER_TO_DTB, REGISTERS_COUNT};
-use rv64_emu::mem::DRAM_SIZE;
-use rv64_emu::emu::Emu;
+use rvemu::bus::DRAM_BASE;
+use rvemu::cpu::{POINTER_TO_DTB, REGISTERS_COUNT};
+use rvemu::dram::DRAM_SIZE;
+use rvemu::emulator::Emulator;
 
 pub const DEFAULT_SP: u64 = DRAM_BASE + DRAM_SIZE;
 
@@ -31,7 +31,7 @@ pub fn create_fregs(non_zero_regs: Vec<(usize, f64)>) -> [f64; REGISTERS_COUNT] 
 
 /// Start a test and check if the registers are expected.
 pub fn run(
-    emu: &mut Emu,
+    emu: &mut Emulator,
     data: Vec<u8>,
     expected_xregs: &[u64; 32],
     expected_fregs: &[f64; 32],
@@ -46,16 +46,16 @@ pub fn run(
     emu.test_start(DRAM_BASE, DRAM_BASE + len);
 
     for (i, e) in expected_xregs.iter().enumerate() {
-        assert_eq!(*e, emu.cpu.int_regs.read(i as u64), "fails at {}", i);
+        assert_eq!(*e, emu.cpu.xregs.read(i as u64), "fails at {}", i);
     }
     for (i, e) in expected_fregs.iter().enumerate() {
         assert_eq!(
             (*e).to_bits(),
-            emu.cpu.float_regs.read(i as u64).to_bits(),
+            emu.cpu.fregs.read(i as u64).to_bits(),
             "fails at {} expected {} but got {} ",
             i,
             *e,
-            emu.cpu.float_regs.read(i as u64)
+            emu.cpu.fregs.read(i as u64)
         );
     }
 }

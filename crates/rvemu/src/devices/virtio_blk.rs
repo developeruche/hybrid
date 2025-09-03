@@ -6,7 +6,7 @@
 //! https://docs.oasis-open.org/virtio/virtio/v1.1/cs01/virtio-v1.1-cs01.html#x1-2390002
 
 use crate::bus::VIRTIO_BASE;
-use crate::cpu::{BYTE, CPU, DOUBLEWORD, HALFWORD, WORD};
+use crate::cpu::{Cpu, BYTE, DOUBLEWORD, HALFWORD, WORD};
 use crate::exception::Exception;
 
 /// The interrupt request of virtio.
@@ -221,7 +221,7 @@ struct VirtqDesc {
 impl VirtqDesc {
     /// Creates a new virtqueue descriptor based on the address that stores the content of the
     /// descriptor.
-    fn new(cpu: &mut CPU, addr: u64) -> Result<Self, Exception> {
+    fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
             addr: cpu.bus.read(addr, DOUBLEWORD)?,
             len: cpu.bus.read(addr.wrapping_add(8), WORD)?,
@@ -253,7 +253,7 @@ struct VirtqAvail {
 }
 
 impl VirtqAvail {
-    fn new(cpu: &mut CPU, addr: u64) -> Result<Self, Exception> {
+    fn new(cpu: &mut Cpu, addr: u64) -> Result<Self, Exception> {
         Ok(Self {
             flags: cpu.bus.read(addr, HALFWORD)? as u16,
             idx: cpu.bus.read(addr.wrapping_add(2), HALFWORD)? as u16,
@@ -263,7 +263,6 @@ impl VirtqAvail {
 }
 
 /// Paravirtualized drivers for IO virtualization.
-#[derive(Debug)]
 pub struct Virtio {
     id: u64,
     device_features: [u32; 2],
@@ -520,7 +519,7 @@ impl Virtio {
 
     /// Accesses the disk via virtio. This is an associated function which takes a `cpu` object to
     /// read and write with a memory directly (DMA).
-    pub fn disk_access(cpu: &mut CPU) -> Result<(), Exception> {
+    pub fn disk_access(cpu: &mut Cpu) -> Result<(), Exception> {
         // https://docs.oasis-open.org/virtio/virtio/v1.1/csprd01/virtio-v1.1-csprd01.html#x1-1460002
         // "Used Buffer Notification
         //     - bit 0 - the interrupt was asserted because the device has used a buffer in at

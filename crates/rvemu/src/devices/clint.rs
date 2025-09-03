@@ -13,9 +13,9 @@
 // - https://github.com/qemu/qemu/blob/master/include/hw/intc/sifive_clint.h
 
 use crate::bus::CLINT_BASE;
+use crate::cpu::{BYTE, DOUBLEWORD, HALFWORD, WORD};
+use crate::csr::{State, MIP, MSIP_BIT, MTIP_BIT};
 use crate::exception::Exception;
-use crate::reg::csr::state::State;
-use crate::reg::csr::{MIP, MSIP_BIT, MTIP_BIT};
 
 /// The address that a msip register starts. A msip is a machine mode software interrupt pending
 /// register, used to assert a software interrupt for a CPU.
@@ -39,7 +39,6 @@ const MTIME_END: u64 = MTIME + 0x8;
 /// 0x0000 msip for hart 0 (4 bytes)
 /// 0x4000 mtimecmp for hart 0 (8 bytes)
 /// 0xbff8 mtime (8 bytes)
-#[derive(Debug)]
 pub struct Clint {
     /// Machine mode software interrupt pending register, used to assert a software interrupt for
     /// a CPU.

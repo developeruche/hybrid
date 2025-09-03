@@ -1,10 +1,10 @@
-use rv64_emu::bus::DRAM_BASE;
-use rv64_emu::reg::csr::MEPC;
-use rv64_emu::emu::Emu;
+use rvemu::bus::DRAM_BASE;
+use rvemu::csr::MEPC;
+use rvemu::emulator::Emulator;
 
 #[test]
 fn illegal_isa() {
-    let mut emu = Emu::new();
+    let mut emu = Emulator::new();
 
     let data = vec![
         0x93, 0x0f, 0x50, 0x00, // addi x31, x0, 5
