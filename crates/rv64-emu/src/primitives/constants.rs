@@ -1,9 +1,7 @@
 //! This module holds global constants employed by the emulator.
 
-
 /// This is the number of registers for this VM
 pub const NUM_REGISTERS: usize = 32;
-
 
 /// One byte len
 pub const BYTE: u8 = 8;

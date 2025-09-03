@@ -1,7 +1,8 @@
-//! This module handles the Registers (Intergers and Floating point)
+//! This module handles the Registers (Intergers)
 use crate::primitives::constants::{NUM_REGISTERS, POINTER_TO_DTB, RAM_BASE, RAM_SIZE};
 
 /// RV64 interger register
+#[derive(Debug)]
 pub struct IntRegister {
     regs: [u64; NUM_REGISTERS],
 }
@@ -25,15 +26,15 @@ impl IntRegister {
         // So, we need to set registers register to the state as they are when a bootloader finished.
         regs[10] = 0;
         regs[11] = POINTER_TO_DTB;
-        
+
         Self { regs }
     }
-    
+
     /// Read the value from a register.
     pub fn read(&self, index: u64) -> u64 {
         self.regs[index as usize]
     }
-    
+
     /// Write the value to a register.
     pub fn write(&mut self, index: u64, value: u64) {
         // Register x0 is hardwired with all bits equal to 0.
@@ -43,4 +44,35 @@ impl IntRegister {
     }
 }
 
-//TODO::@developeruche -> Implement Display on IntRegister
+impl core::fmt::Display for IntRegister {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let abi = [
+            "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ", " s0 ", " s1 ", " a0 ",
+            " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
+            " s6 ", " s7 ", " s8 ", " s9 ", " s10", " s11", " t3 ", " t4 ", " t5 ", " t6 ",
+        ];
+        let mut output = String::from("");
+        for i in (0..NUM_REGISTERS).step_by(4) {
+            output = format!(
+                "{}\n{}",
+                output,
+                format!(
+                    "x{:02}({})={:>#18x} x{:02}({})={:>#18x} x{:02}({})={:>#18x} x{:02}({})={:>#18x}",
+                    i,
+                    abi[i],
+                    self.read(i as u64),
+                    i + 1,
+                    abi[i + 1],
+                    self.read(i as u64 + 1),
+                    i + 2,
+                    abi[i + 2],
+                    self.read(i as u64 + 2),
+                    i + 3,
+                    abi[i + 3],
+                    self.read(i as u64 + 3),
+                )
+            );
+        }
+        write!(f, "{}", output)
+    }
+}
