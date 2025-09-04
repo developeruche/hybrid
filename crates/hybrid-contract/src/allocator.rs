@@ -113,4 +113,4 @@ unsafe impl GlobalAlloc for HybridAlloc {
 
 /// Sets `HybridAlloc` as the global allocator.
 #[global_allocator]
-static mut ALLOC: HybridAlloc = HybridAlloc {};
+pub static mut ALLOC: HybridAlloc = HybridAlloc {};
