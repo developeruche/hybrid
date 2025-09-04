@@ -3,7 +3,7 @@ use alloy_core::primitives::{Address, Bytes, U32};
 use alloy_sol_types::{SolType, SolValue};
 use ext_alloc::vec::Vec;
 use core::{arch::asm, marker::PhantomData, u64};
-use eth_riscv_syscalls::Syscall;
+use hybrid_syscalls::Syscall;
 
 use crate::{FromBuilder, InitInterface, MethodCtx, ReadWrite};
 

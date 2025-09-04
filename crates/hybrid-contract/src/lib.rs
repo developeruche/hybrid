@@ -48,7 +48,7 @@ unsafe fn panic(info: &PanicInfo<'_>) -> ! {
     }
 }
 
-use eth_riscv_syscalls::Syscall;
+use hybrid_syscalls::Syscall;
 
 pub fn return_riscv(addr: u64, offset: u64) -> ! {
     unsafe {

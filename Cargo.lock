@@ -742,10 +742,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hybrid-contract"
-version = "0.1.0"
-
-[[package]]
 name = "hybrid-syscalls"
 version = "0.1.0"
 dependencies = [
