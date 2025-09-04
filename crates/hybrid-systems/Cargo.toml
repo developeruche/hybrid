@@ -1,13 +1,15 @@
 [package]
 name = "hybrid-systems"
-version.workspace = true
-license.workspace = true
-authors.workspace = true
-categories.workspace = true
-keywords.workspace = true
-repository.workspace = true
-documentation.workspace = true
-homepage.workspace = true
-edition.workspace = true
+version = "0.1.0"
+license = "MIT"
+authors = ["Developer Uche <developeruche@gmail.com>"]
+categories = ["compilers"]
+keywords = ["revm", "evm", "ethereum", "blockchain", "no_std"]
+repository = "https://github.com/developeruche/hybrid"
+documentation = "https://github.com/developeruche/hybrid"
+homepage = "https://github.com/developeruche/hybrid"
+edition = "2021"
 
 [dependencies]
+thiserror-no-std = "2.0.2"
+alloy-core = "1.3.1"

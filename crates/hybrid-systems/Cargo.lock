@@ -742,11 +742,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hybrid-contract"
-version = "0.1.0"
-
-[[package]]
-name = "hybrid-syscalls"
+name = "hybrid-systems"
 version = "0.1.0"
 dependencies = [
  "alloy-core",
@@ -1258,10 +1254,6 @@ dependencies = [
  "tempfile",
  "wait-timeout",
 ]
-
-[[package]]
-name = "rvemu"
-version = "0.1.0"
 
 [[package]]
 name = "ryu"

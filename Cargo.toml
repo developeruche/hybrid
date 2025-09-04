@@ -1,5 +1,7 @@
 [workspace]
-members = [ "crates/hybrid-contract", "crates/hybrid-systems","crates/rvemu"]
+members = [ "crates/hybrid-contract", "crates/hybrid-syscalls", "crates/rvemu"]
+
+exclude = ["crates/hybrid-systems"]
 
 
 [workspace.package]

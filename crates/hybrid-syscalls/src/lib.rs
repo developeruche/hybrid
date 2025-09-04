@@ -1,6 +1,9 @@
-extern crate alloc;
-use crate::error::Error;
+#![no_std]
 
+extern crate alloc;
+
+mod error;
+pub use error::Error;
 
 macro_rules! syscalls {
     ($(($num:expr, $identifier:ident, $name:expr)),* $(,)?) => {
