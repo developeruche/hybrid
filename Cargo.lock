@@ -3,5 +3,13 @@
 version = 4
 
 [[package]]
+name = "hybrid-contract"
+version = "0.1.0"
+
+[[package]]
+name = "hybrid-systems"
+version = "0.1.0"
+
+[[package]]
 name = "rvemu"
 version = "0.1.0"

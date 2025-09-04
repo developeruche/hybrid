@@ -1,7 +1,7 @@
 mod helper;
 
-use rvemu::emulator::Emulator;
 use rvemu::bus::DRAM_BASE;
+use rvemu::emulator::Emulator;
 
 #[test]
 fn lb_rd_offset_rs1() {
@@ -86,7 +86,7 @@ fn lhu_rd_offset_rs1() {
 #[test]
 fn addi_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x93, 0x0F, 0x40, 0x00, // addi x31, x0, 4
     ];
@@ -99,7 +99,7 @@ fn addi_rd_rs1_imm() {
 #[test]
 fn slli_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x20, 0x00, // addi x16 x0, 2
         0x93, 0x18, 0x38, 0x00, // slli x17, x16, 3
@@ -113,7 +113,7 @@ fn slli_rd_rs1_imm() {
 #[test]
 fn slti_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0xb0, 0xff, // addi x16 x0, -5
         0x93, 0x28, 0xe8, 0xff, // slti x17, x16, -2
@@ -127,7 +127,7 @@ fn slti_rd_rs1_imm() {
 #[test]
 fn sltiu_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x20, 0x00, // addi x16, x0, 2
         0x93, 0x38, 0x58, 0x00, // sltiu, x17, x16, 5
@@ -141,7 +141,7 @@ fn sltiu_rd_rs1_imm() {
 #[test]
 fn xori_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x48, 0x68, 0x00, // xori, x17, x16, 6
@@ -155,7 +155,7 @@ fn xori_rd_rs1_imm() {
 #[test]
 fn srai_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x80, 0xff, // addi x16, x0, -8
         0x93, 0x58, 0x28, 0x40, // srai x17, x16, 2
@@ -169,7 +169,7 @@ fn srai_rd_rs1_imm() {
 #[test]
 fn srli_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x80, 0x00, // addi x16, x0, 8
         0x93, 0x58, 0x28, 0x00, // srli x17, x16, 2
@@ -183,7 +183,7 @@ fn srli_rd_rs1_imm() {
 #[test]
 fn ori_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x68, 0x68, 0x00, // ori, x17, x16, 6
@@ -197,7 +197,7 @@ fn ori_rd_rs1_imm() {
 #[test]
 fn andi_rd_rs1_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x40, 0x00, // addi x16, x0, 4
         0x93, 0x78, 0x78, 0x00, // andi, x17, x16, 7
@@ -211,7 +211,7 @@ fn andi_rd_rs1_imm() {
 #[test]
 fn auipc_rd_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x17, 0x28, 0x00, 0x00, // auipc x16, 2
     ];
@@ -224,14 +224,15 @@ fn auipc_rd_imm() {
 #[test]
 fn sb_rs2_offset_rs1() {
     let mut _emu = Emulator::new();
-    
+
     let _data = vec![
         0x13, 0x08, 0xb0, 0xff, // addi x16, x0, -5
         0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
         0x23, 0x02, 0x00, 0x01, // sb x16, 4(x0)
         0x03, 0x09, 0x40, 0x00, // lb x18, 4(x0)
     ];
-    let _expected_xregs = helper::create_xregs(vec![(16, -5i64 as u64), (17, 3), (18, -5i64 as u64)]);
+    let _expected_xregs =
+        helper::create_xregs(vec![(16, -5i64 as u64), (17, 3), (18, -5i64 as u64)]);
     let _expected_fregs = helper::create_fregs(vec![]);
 
     // TODO: fix StoreAMOAccessFault
@@ -241,14 +242,15 @@ fn sb_rs2_offset_rs1() {
 #[test]
 fn sh_rs2_offset_rs1() {
     let mut _emu = Emulator::new();
-    
+
     let _data = vec![
         0x13, 0x08, 0x00, 0xc0, // addi x16, x0, -1024
         0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
         0x23, 0x12, 0x00, 0x01, // sh x16, 4(x0)
         0x03, 0x19, 0x40, 0x00, // lh x18, 4(x0)
     ];
-    let _expected_xregs = helper::create_xregs(vec![(16, -1024i64 as u64), (17, 3), (18, -1024i64 as u64)]);
+    let _expected_xregs =
+        helper::create_xregs(vec![(16, -1024i64 as u64), (17, 3), (18, -1024i64 as u64)]);
     let _expected_fregs = helper::create_fregs(vec![]);
 
     // TODO: fix StoreAMOAccessFault
@@ -258,14 +260,15 @@ fn sh_rs2_offset_rs1() {
 #[test]
 fn sw_rs2_offset_rs1() {
     let mut _emu = Emulator::new();
-    
+
     let _data = vec![
         0x13, 0x08, 0x00, 0x80, // addi x16, x0, -2048
         0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
         0x23, 0x22, 0x00, 0x01, // sw x16, 4(x0)
         0x03, 0x29, 0x40, 0x00, // lw x18, 4(x0)
     ];
-    let _expected_xregs = helper::create_xregs(vec![(16, -2048i64 as u64), (17, 3), (18, -2048i64 as u64)]);
+    let _expected_xregs =
+        helper::create_xregs(vec![(16, -2048i64 as u64), (17, 3), (18, -2048i64 as u64)]);
     let _expected_fregs = helper::create_fregs(vec![]);
 
     // TODO: fix StoreAMOAccessFault
@@ -275,7 +278,7 @@ fn sw_rs2_offset_rs1() {
 #[test]
 fn add_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x93, 0x01, 0x50, 0x00, // addi x3, x0, 5
         0x13, 0x02, 0x60, 0x00, // addi x4, x0, 6
@@ -290,7 +293,7 @@ fn add_rd_rs1_rs2() {
 #[test]
 fn sub_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x93, 0x01, 0x50, 0x00, // addi x3, x0, 5
         0x13, 0x02, 0x60, 0x00, // addi x4, x0, 6
@@ -305,7 +308,7 @@ fn sub_rd_rs1_rs2() {
 #[test]
 fn sll_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x80, 0x00, // addi x16, x0, 8
         0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -320,7 +323,7 @@ fn sll_rd_rs1_rs2() {
 #[test]
 fn slt_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x80, 0xff, // addi x16, x0, -8
         0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -335,7 +338,7 @@ fn slt_rd_rs1_rs2() {
 #[test]
 fn sltu_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x80, 0x00, // addi x16, x0, 8
         0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -350,7 +353,7 @@ fn sltu_rd_rs1_rs2() {
 #[test]
 fn xor_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x60, 0x00, // addi x17, x0, 6
@@ -365,7 +368,7 @@ fn xor_rd_rs1_rs2() {
 #[test]
 fn srl_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x00, 0x01, // addi x16, x0, 16
         0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
@@ -380,13 +383,14 @@ fn srl_rd_rs1_rs2() {
 #[test]
 fn sra_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x00, 0xff, // addi x16, x0, -16
         0x93, 0x08, 0x20, 0x00, // addi x17, x0, 2
         0x33, 0x59, 0x18, 0x41, // sra x18, x16, x17
     ];
-    let expected_xregs = helper::create_xregs(vec![(16, -16i64 as u64), (17, 2), (18, -4i64 as u64)]);
+    let expected_xregs =
+        helper::create_xregs(vec![(16, -16i64 as u64), (17, 2), (18, -4i64 as u64)]);
     let expected_fregs = helper::create_fregs(vec![]);
 
     helper::run(&mut emu, data, &expected_xregs, &expected_fregs);
@@ -395,7 +399,7 @@ fn sra_rd_rs1_rs2() {
 #[test]
 fn or_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -410,7 +414,7 @@ fn or_rd_rs1_rs2() {
 #[test]
 fn and_rd_rs1_rs2() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -425,7 +429,7 @@ fn and_rd_rs1_rs2() {
 #[test]
 fn lui_rd_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x37, 0x28, 0x00, 0x00, // lui x16, 2
     ];
@@ -438,7 +442,7 @@ fn lui_rd_imm() {
 #[test]
 fn beq_rs1_rs2_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -455,7 +459,7 @@ fn beq_rs1_rs2_imm() {
 #[test]
 fn bne_rs1_rs2_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -472,7 +476,7 @@ fn bne_rs1_rs2_imm() {
 #[test]
 fn blt_rs1_rs2_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0xd0, 0xff, // addi x16, x0, -3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -489,7 +493,7 @@ fn blt_rs1_rs2_imm() {
 #[test]
 fn bge_rs1_rs2_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0xd0, 0xff, // addi x16, x0, -3
         0x93, 0x08, 0xd0, 0xff, // addi x17, x0, -3
@@ -506,7 +510,7 @@ fn bge_rs1_rs2_imm() {
 #[test]
 fn bltu_rs1_rs2_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -523,7 +527,7 @@ fn bltu_rs1_rs2_imm() {
 #[test]
 fn bgeu_rs1_rs2_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x50, 0x00, // addi x16, x0, 5
         0x93, 0x08, 0x30, 0x00, // addi x17, x0, 3
@@ -540,7 +544,7 @@ fn bgeu_rs1_rs2_imm() {
 #[test]
 fn jalr_rd_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
@@ -557,7 +561,7 @@ fn jalr_rd_imm() {
 #[test]
 fn jal_rd_imm() {
     let mut emu = Emulator::new();
-    
+
     let data = vec![
         0x13, 0x08, 0x30, 0x00, // addi x16, x0, 3
         0x93, 0x08, 0x50, 0x00, // addi x17, x0, 5
