@@ -12,4 +12,3 @@ edition.workspace = true
 
 [dependencies]
 thiserror-no-std = "2.0.2"
-alloy-core = "1.3.1"
