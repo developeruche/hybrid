@@ -4,7 +4,6 @@ use crate::utils::deploy_riscv_bytecode;
 use alloy::primitives::hex;
 use anyhow::{anyhow, Result};
 use colored::Colorize;
-use fs_extra::dir::{self, CopyOptions};
 use hybrid_compile::run_contract_compilation;
 use include_dir::{include_dir, Dir};
 use indicatif::{ProgressBar, ProgressStyle};
