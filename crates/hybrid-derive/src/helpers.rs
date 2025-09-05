@@ -1,3 +1,10 @@
+//! Helper functions and types for the hybrid-derive procedural macros.
+//!
+//! This module contains the core implementation logic that powers the various
+//! derive macros and attributes provided by the hybrid-derive crate. It handles
+//! type conversions, function selector generation, interface creation, and
+//! code generation for smart contract functionality.
+
 use alloy_core::primitives::keccak256;
 use alloy_dyn_abi::DynSolType;
 use proc_macro2::TokenStream;
@@ -7,7 +14,17 @@ use syn::{
     FnArg, Ident, ImplItemMethod, LitStr, PathArguments, ReturnType, TraitItemMethod, Type,
 };
 
-// Unified method info from `ImplItemMethod` and `TraitItemMethod`
+/// Unified method information extracted from both `ImplItemMethod` and `TraitItemMethod`.
+///
+/// This struct provides a common representation of method signatures that can be used
+/// with both trait methods and implementation methods, enabling shared code generation
+/// logic across different contexts.
+///
+/// # Fields
+///
+/// * `name` - The method identifier
+/// * `args` - All function arguments including `self`
+/// * `return_type` - The method's return type specification
 #[derive(Clone)]
 pub struct MethodInfo<'a> {
     name: &'a Ident,
@@ -36,6 +53,21 @@ impl<'a> From<&'a TraitItemMethod> for MethodInfo<'a> {
 }
 
 impl<'a> MethodInfo<'a> {
+    /// Determines if this method requires mutable access to `self`.
+    ///
+    /// This method examines the first argument to determine if it's `&mut self`
+    /// or just `&self`. This information is used to separate methods into
+    /// read-only and state-changing categories for interface generation.
+    ///
+    /// # Returns
+    ///
+    /// * `true` - If the method takes `&mut self` (can modify state)
+    /// * `false` - If the method takes `&self` (read-only)
+    ///
+    /// # Panics
+    ///
+    /// Panics if the method doesn't have `self` as the first parameter, which
+    /// violates the expected contract method signature format.
     pub fn is_mutable(&self) -> bool {
         match self.args.first() {
             Some(FnArg::Receiver(receiver)) => receiver.mutability.is_some(),
@@ -45,7 +77,22 @@ impl<'a> MethodInfo<'a> {
     }
 }
 
-// Helper function to get the parameter names + types of a method
+/// Internal helper function to extract argument names and types from a method.
+///
+/// This function processes the method's argument list and extracts both the
+/// generated parameter names and their corresponding types. It can optionally
+/// skip the first argument (typically `self`) when processing contract methods.
+///
+/// # Parameters
+///
+/// * `skip_first_arg` - Whether to skip the first argument (usually `self`)
+/// * `method` - The method to extract arguments from
+///
+/// # Returns
+///
+/// A tuple containing:
+/// * `Vec<Ident>` - Generated parameter names (arg0, arg1, etc.)
+/// * `Vec<&Type>` - References to the parameter types
 fn get_arg_props<'a>(
     skip_first_arg: bool,
     method: &'a MethodInfo<'a>,
@@ -65,22 +112,67 @@ fn get_arg_props<'a>(
         .unzip()
 }
 
+/// Extracts argument names and types from a method, excluding the first argument.
+///
+/// This is the standard function used for contract methods where the first
+/// argument is always `self` and should be excluded from ABI encoding.
+///
+/// # Parameters
+///
+/// * `method` - The method to extract arguments from
+///
+/// # Returns
+///
+/// A tuple containing generated parameter names and their types, excluding `self`.
+///
+/// # Example
+///
+/// For a method `fn transfer(&mut self, to: Address, amount: U256)`:
+/// - Returns: `([arg0, arg1], [&Address, &U256])`
 pub fn get_arg_props_skip_first<'a>(
     method: &'a MethodInfo<'a>,
 ) -> (Vec<Ident>, Vec<&'a syn::Type>) {
     get_arg_props(true, method)
 }
 
+/// Extracts argument names and types from a method, including all arguments.
+///
+/// This function is used when all arguments need to be processed, such as
+/// for constructor methods or standalone functions.
+///
+/// # Parameters
+///
+/// * `method` - The method to extract arguments from
+///
+/// # Returns
+///
+/// A tuple containing generated parameter names and their types for all arguments.
 pub fn get_arg_props_all<'a>(method: &'a MethodInfo<'a>) -> (Vec<Ident>, Vec<&'a syn::Type>) {
     get_arg_props(false, method)
 }
 
+/// Supported naming style conversions for interface generation.
+///
+/// These styles enable automatic conversion between Rust naming conventions
+/// (snake_case) and other language conventions (camelCase) for cross-language
+/// contract compatibility.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum InterfaceNamingStyle {
+    /// Convert snake_case method names to camelCase.
+    ///
+    /// Examples:
+    /// - `get_balance` → `getBalance`
+    /// - `transfer_from` → `transferFrom`
+    /// - `set_approval_for_all` → `setApprovalForAll`
     CamelCase,
 }
 
+/// Arguments parsed from the `#[interface]` attribute.
+///
+/// This struct holds configuration options that control how interfaces
+/// are generated, including naming style conversions.
 pub struct InterfaceArgs {
+    /// Optional naming style conversion to apply to method names.
     pub rename: Option<InterfaceNamingStyle>,
 }
 
@@ -115,7 +207,36 @@ impl Parse for InterfaceArgs {
     }
 }
 
-// Helper function to generate interface impl from user-defined methods
+/// Generates a complete interface implementation from a collection of methods.
+///
+/// This function creates a type-safe contract interface that can be used to
+/// call external contracts. The generated interface includes:
+/// - Address management and context types
+/// - Separate method implementations for read-only and mutable operations
+/// - Automatic ABI encoding/decoding for all method calls
+/// - Builder pattern for interface instantiation
+///
+/// # Type Parameters
+///
+/// * `T` - The method type (either `ImplItemMethod` or `TraitItemMethod`)
+///
+/// # Parameters
+///
+/// * `methods` - Collection of methods to include in the interface
+/// * `interface_name` - Name for the generated interface struct
+/// * `interface_style` - Optional naming style conversion for method names
+///
+/// # Returns
+///
+/// A `TokenStream` containing the complete interface implementation.
+///
+/// # Generated Structure
+///
+/// The generated interface includes:
+/// - `InterfaceName<C: CallCtx>` - Main interface struct
+/// - `InitInterface` implementation for creation
+/// - Context type conversions (`ReadOnly`, `StaticCtx`, `MutableCtx`)
+/// - Method implementations separated by mutability
 pub fn generate_interface<T>(
     methods: &[&T],
     interface_name: &Ident,
@@ -189,6 +310,32 @@ where
     }
 }
 
+/// Generates the implementation for a single interface method.
+///
+/// This function creates the Rust code for an interface method that:
+/// - Computes the method's function selector
+/// - Encodes method parameters into calldata
+/// - Makes the appropriate contract call (call vs staticcall)
+/// - Decodes and returns the result
+///
+/// # Parameters
+///
+/// * `method` - Method information to generate implementation for
+/// * `interface_style` - Optional naming style for the method name
+/// * `is_mutable` - Whether this method can modify contract state
+///
+/// # Returns
+///
+/// A `TokenStream` containing the method implementation.
+///
+/// # Generated Method Structure
+///
+/// The generated method:
+/// 1. Encodes parameters into ABI calldata
+/// 2. Prepends the 4-byte function selector
+/// 3. Makes contract call using appropriate method (call/staticcall)
+/// 4. Decodes return data based on expected return type
+/// 5. Handles errors by returning `None` or propagating custom errors
 fn generate_method_impl(
     method: &MethodInfo,
     interface_style: Option<InterfaceNamingStyle>,
@@ -314,13 +461,36 @@ fn generate_method_impl(
     }
 }
 
+/// Represents different wrapper types that can be used for method return values.
+///
+/// This enum categorizes return types to enable proper error handling and
+/// result encoding in generated contract methods.
 pub enum WrapperType {
+    /// `Result<T, E>` return type with success and error types as TokenStreams.
     Result(TokenStream, TokenStream),
+    /// `Option<T>` return type with inner type as TokenStream.
     Option(TokenStream),
+    /// Direct return type with no wrapper.
     None,
 }
 
-// Helper function to extract Result or Option types if present
+/// Analyzes a return type to determine if it's wrapped in `Result`, `Option`, or neither.
+///
+/// This function examines method return types to understand how to handle
+/// success/failure cases in the generated code. Different wrapper types
+/// require different error handling strategies:
+///
+/// - `Result<T, E>` - Returns `Ok(value)` on success, `Err(error)` on failure
+/// - `Option<T>` - Returns `Some(value)` on success, `None` on failure
+/// - `T` - Direct return, wrapped in `Option` automatically
+///
+/// # Parameters
+///
+/// * `return_type` - The return type to analyze
+///
+/// # Returns
+///
+/// A `WrapperType` indicating how the return value should be handled.
 pub fn extract_wrapper_types(return_type: &ReturnType) -> WrapperType {
     let type_path = match return_type {
         ReturnType::Default => return WrapperType::None,
@@ -381,7 +551,36 @@ pub fn extract_wrapper_types(return_type: &ReturnType) -> WrapperType {
     }
 }
 
-// Helper function to generate fn selector
+/// Generates a 4-byte function selector for a method following Ethereum ABI standards.
+///
+/// This function computes the function selector by:
+/// 1. Converting the method name according to the specified style
+/// 2. Converting Rust parameter types to Solidity ABI type names
+/// 3. Creating the canonical function signature string
+/// 4. Computing the Keccak-256 hash of the signature
+/// 5. Returning the first 4 bytes as the selector
+///
+/// # Parameters
+///
+/// * `method` - The method to generate a selector for
+/// * `style` - Optional naming style conversion (e.g., snake_case to camelCase)
+///
+/// # Returns
+///
+/// The 4-byte function selector, or `None` if generation fails.
+///
+/// # Examples
+///
+/// ```ignore
+/// // transfer(address,uint256) -> 0xa9059cbb
+/// // balanceOf(address) -> 0x70a08231
+/// // approve(address,uint256) -> 0x095ea7b3
+/// ```
+///
+/// # Function Signature Format
+///
+/// The signature follows Solidity's canonical format:
+/// `functionName(type1,type2,...)` with no spaces and exact type names.
 pub fn generate_fn_selector(
     method: &MethodInfo,
     style: Option<InterfaceNamingStyle>,
@@ -410,8 +609,54 @@ pub fn generate_fn_selector(
     Some(selector_bytes)
 }
 
-// Helper function to convert rust types to their solidity equivalent
-// TODO: make sure that the impl is robust, so far only tested with "simple types"
+/// Converts Rust types to their Solidity ABI equivalent types.
+///
+/// This function provides the core type mapping between Rust's type system
+/// and Solidity's ABI type system. It handles primitive types, collections,
+/// and complex nested structures to enable seamless interoperability.
+///
+/// # Supported Type Mappings
+///
+/// | Rust Type | Solidity Type | Notes |
+/// |-----------|---------------|-------|
+/// | `Address` | `address` | 20-byte Ethereum address |
+/// | `Function` | `function` | Function pointer (24 bytes) |
+/// | `bool`, `Bool` | `bool` | Boolean value |
+/// | `String`, `str` | `string` | UTF-8 string |
+/// | `Bytes` | `bytes` | Dynamic byte array |
+/// | `B1`-`B32` | `bytes1`-`bytes32` | Fixed-size byte arrays |
+/// | `U8`-`U256` | `uint8`-`uint256` | Unsigned integers |
+/// | `I8`-`I256` | `int8`-`int256` | Signed integers |
+/// | `Vec<T>` | `T[]` | Dynamic array |
+/// | `[T; N]` | `T[N]` | Fixed-size array |
+/// | `(T1, T2, ...)` | `(T1, T2, ...)` | Tuple |
+///
+/// # Parameters
+///
+/// * `ty` - The Rust type to convert
+///
+/// # Returns
+///
+/// * `Ok(DynSolType)` - The corresponding Solidity ABI type
+/// * `Err(&str)` - Error message if conversion is not supported
+///
+/// # Examples
+///
+/// ```ignore
+/// let addr_type = parse_quote!(Address);
+/// assert_eq!(rust_type_to_sol_type(&addr_type)?, DynSolType::Address);
+///
+/// let array_type = parse_quote!(Vec<U256>);
+/// assert_eq!(rust_type_to_sol_type(&array_type)?,
+///            DynSolType::Array(Box::new(DynSolType::Uint(256))));
+/// ```
+///
+/// # Implementation Notes
+///
+/// - Integer types must be multiples of 8 bits and ≤ 256 bits
+/// - Fixed bytes must be between 1 and 32 bytes
+/// - Nested types (arrays of arrays, etc.) are fully supported
+/// - Custom struct types are not yet supported (planned enhancement)
 pub fn rust_type_to_sol_type(ty: &Type) -> Result<DynSolType, &'static str> {
     match ty {
         Type::Path(type_path) => {
@@ -512,6 +757,36 @@ pub fn rust_type_to_sol_type(ty: &Type) -> Result<DynSolType, &'static str> {
     }
 }
 
+/// Converts a snake_case string to camelCase format.
+///
+/// This function transforms Rust's conventional snake_case identifiers into
+/// JavaScript/Solidity-style camelCase identifiers for cross-language
+/// compatibility in contract interfaces.
+///
+/// # Parameters
+///
+/// * `s` - The snake_case string to convert
+///
+/// # Returns
+///
+/// The string converted to camelCase format.
+///
+/// # Examples
+///
+/// ```ignore
+/// assert_eq!(to_camel_case("get_balance".to_string()), "getBalance");
+/// assert_eq!(to_camel_case("transfer_from".to_string()), "transferFrom");
+/// assert_eq!(to_camel_case("set_approval_for_all".to_string()), "setApprovalForAll");
+/// ```
+///
+/// # Algorithm
+///
+/// 1. Iterate through characters in the input string
+/// 2. Keep the first character lowercase
+/// 3. When encountering non-alphanumeric characters (like `_`):
+///    - Skip the separator
+///    - Capitalize the next alphabetic character
+/// 4. Preserve alphanumeric characters in their original case otherwise
 fn to_camel_case(s: String) -> String {
     let mut result = String::new();
     let mut capitalize_next = false;
@@ -536,7 +811,46 @@ fn to_camel_case(s: String) -> String {
     result
 }
 
-// Helper function to generate the deployment code
+/// Generates deployment/initialization code for smart contracts.
+///
+/// This function creates the deployment bytecode that:
+/// 1. Decodes constructor arguments from the transaction data
+/// 2. Initializes the contract instance using the constructor or default
+/// 3. Returns the runtime bytecode that will handle future contract calls
+///
+/// The generated deployment code becomes the contract's initialization code,
+/// which is executed once during deployment and then replaced with the runtime code.
+///
+/// # Parameters
+///
+/// * `struct_name` - Name of the contract struct being deployed
+/// * `constructor` - Optional constructor method (must be named `new`)
+///
+/// # Returns
+///
+/// A `TokenStream` containing the complete deployment code.
+///
+/// # Generated Deployment Flow
+///
+/// 1. **Constructor Arguments**: Decode ABI-encoded constructor parameters
+/// 2. **Contract Initialization**: Call constructor or use default initialization
+/// 3. **Runtime Code Return**: Load and return the runtime bytecode
+/// 4. **Exit**: Terminate deployment with the returned runtime code
+///
+/// # Constructor Requirements
+///
+/// If a constructor is provided, it must:
+/// - Be named `new`
+/// - Take ABI-encodable parameters
+/// - Return an instance of the contract struct
+/// - Be a static method (not take `&self`)
+///
+/// # Runtime Code Embedding
+///
+/// The deployment code expects the runtime bytecode to be available at:
+/// `../target/riscv64imac-unknown-none-elf/release/runtime`
+///
+/// This file is included at compile time and returned during deployment.
 pub fn generate_deployment_code(
     struct_name: &Ident,
     constructor: Option<&ImplItemMethod>,
@@ -589,6 +903,10 @@ mod tests {
     use super::*;
     use syn::parse_quote;
 
+    /// Mock method structure for testing helper functions.
+    ///
+    /// This struct wraps an `ImplItemMethod` to provide a consistent interface
+    /// for testing the various helper functions in this module.
     struct MockMethod {
         method: ImplItemMethod,
     }
@@ -626,6 +944,18 @@ mod tests {
         }
     }
 
+    /// Helper function to compute a function selector from a signature string.
+    ///
+    /// This function is used in tests to verify that generated selectors match
+    /// the expected values for known function signatures.
+    ///
+    /// # Parameters
+    ///
+    /// * `sig` - The function signature string (e.g., "transfer(address,uint256)")
+    ///
+    /// # Returns
+    ///
+    /// The 4-byte function selector computed from the signature.
     pub fn get_selector_from_sig(sig: &str) -> [u8; 4] {
         keccak256(sig.as_bytes())[0..4]
             .try_into()
