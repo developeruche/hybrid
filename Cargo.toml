@@ -1,5 +1,5 @@
 [workspace]
-members = [ "crates/hybrid-ethereum","crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
+members = [ "crates/hybrid-compile", "crates/hybrid-ethereum","crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
 
 exclude = ["crates/hybrid-contract", "crates/hybrid-derive", "contracts/*"]
 
