@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
+members = [ "crates/hybrid-ethereum","crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
 
 exclude = ["crates/hybrid-contract", "crates/hybrid-derive", "contracts/*"]
 
@@ -42,3 +42,12 @@ alloy-primitives = { version = "1.0.0", default-features = false, features = ["m
 
 #revm
 revm = { version = "22.0.1", default-features = false }
+
+# tracing (log)
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# misc
+anyhow = "1.0.98"
+indicatif = "0.17"
+colored = "2.1"
