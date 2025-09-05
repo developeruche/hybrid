@@ -1,5 +1,3 @@
-use std::error::Error;
-
 use alloy_core::primitives::keccak256;
 use alloy_dyn_abi::DynSolType;
 use proc_macro2::TokenStream;

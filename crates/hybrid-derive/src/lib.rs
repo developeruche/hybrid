@@ -1,6 +1,5 @@
 extern crate proc_macro;
 use alloy_core::primitives::U256;
-use alloy_sol_types::SolValue;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{
