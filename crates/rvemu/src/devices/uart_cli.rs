@@ -48,6 +48,7 @@ const UART_LSR_RX: u8 = 1;
 const UART_LSR_TX: u8 = 1 << 5;
 
 /// The UART, the size of which is 0x100 (2**8).
+#[derive(Debug)]
 pub struct Uart {
     uart: Arc<(Mutex<[u8; UART_SIZE as usize]>, Condvar)>,
     interrupting: Arc<AtomicBool>,

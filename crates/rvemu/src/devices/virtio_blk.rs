@@ -263,6 +263,7 @@ impl VirtqAvail {
 }
 
 /// Paravirtualized drivers for IO virtualization.
+#[derive(Debug)]
 pub struct Virtio {
     id: u64,
     device_features: [u32; 2],

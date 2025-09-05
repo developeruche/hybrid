@@ -34,8 +34,7 @@ hybrid-compile = { path = "crates/hybrid-compile" }
 hybrid-ethereum = { path = "crates/hybrid-ethereum" }
 
 # rvemu
-# rvemu = { path = "crates/rvemu" }
-rvemu = { git="https://github.com/r55-eth/rvemu.git", version = "0.0.11"}
+rvemu = { path = "crates/rvemu" }
 
 # error
 eyre = "0.6.12"

@@ -57,7 +57,7 @@ where
     let host = &mut evm.ctx();
 
     loop {
-        let run_result = emu.start();
+        let run_result = emu.estart();
 
         match run_result {
             Err(Exception::EnvironmentCallFromMMode) => {

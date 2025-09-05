@@ -9,7 +9,7 @@ use crate::primitives::{ContractError, ContractWithDeps};
 /// contract and coresponding dependency
 pub fn obtain_contract_by_path(path: &Path) -> Option<ContractWithDeps> {
     println!("Path: {}", path.to_str().unwrap());
-    
+
     if !path.is_dir() {
         // currently smart contract have to a lib create hereby dir
         return None;
@@ -43,23 +43,20 @@ pub fn obtain_contract_by_path(path: &Path) -> Option<ContractWithDeps> {
             return Some(contract);
         }
         Err(ContractError::MissingDependencies) => {
-            error!(
-                "Hybrid missing dependency");
-            
+            error!("Hybrid missing dependency");
+
             return None;
-        },
+        }
         Err(ContractError::MissingBinaries) => {
-            error!(
-                "Hybrid missing binary");
-            
+            error!("Hybrid missing binary");
+
             return None;
-        },
+        }
         Err(ContractError::MissingFeatures) => {
-            error!(
-                "Hybrid missing feature");
-            
+            error!("Hybrid missing feature");
+
             return None;
-        },
+        }
         Err(e) => {
             warn!(
                 "Error parsing potential contract at {:?}: {:?}",

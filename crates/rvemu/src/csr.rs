@@ -170,6 +170,7 @@ pub const SEIP_BIT: u64 = 1 << 9;
 pub const MEIP_BIT: u64 = 1 << 11;
 
 /// The state to contains all the CSRs.
+#[derive(Debug)]
 pub struct State {
     csrs: [u64; CSR_SIZE],
 }

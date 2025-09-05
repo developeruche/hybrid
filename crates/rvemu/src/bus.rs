@@ -1,11 +1,12 @@
 //! The bus module contains the system bus which can access the memroy or memory-mapped peripheral
 //! devices.
 
+use std::ops::Range;
+
 use crate::devices::{clint::Clint, plic::Plic, uart::Uart, virtio_blk::Virtio};
 use crate::dram::{Dram, DRAM_SIZE};
 use crate::exception::Exception;
 use crate::rom::Rom;
-use core::ops::Range;
 
 // QEMU virt machine:
 // https://github.com/qemu/qemu/blob/master/hw/riscv/virt.c#L46-L63
@@ -46,6 +47,7 @@ pub const DRAM_BASE: u64 = 0x8000_0000;
 const DRAM_END: u64 = DRAM_BASE + DRAM_SIZE;
 
 /// The system bus.
+#[derive(Debug)]
 pub struct Bus {
     pub clint: Clint,
     pub plic: Plic,

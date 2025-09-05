@@ -130,6 +130,7 @@ fn dtb() -> std::io::Result<Vec<u8>> {
 }
 
 /// The read-only memory (ROM).
+#[derive(Debug)]
 pub struct Rom {
     data: Vec<u8>,
 }

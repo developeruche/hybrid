@@ -4,6 +4,7 @@ use crate::cpu::Cpu;
 use crate::exception::{Exception, Trap};
 
 /// The emulator to hold a CPU.
+#[derive(Debug)]
 pub struct Emulator {
     /// The CPU which is the core implementation of this emulator.
     pub cpu: Cpu,
@@ -150,8 +151,9 @@ impl Emulator {
         }
     }
 
+    /// Start executing the emulator.
     pub fn estart(&mut self) -> Result<(), Exception> {
-        if self.is_debug || self.cpu.is_count {
+        if self.is_debug {
             self.debug_start();
         }
 
@@ -166,7 +168,7 @@ impl Emulator {
             }
 
             // Execute an instruction.
-            match self.cpu.execute() {
+            match self.cpu.eexecute() {
                 Ok(0) => {
                     // Return wfi as a ok.
                     return Ok(());

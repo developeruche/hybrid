@@ -210,6 +210,7 @@ impl fmt::Display for FRegisters {
 }
 
 /// The CPU to contain registers, a program counter, status, and a privileged mode.
+#[derive(Debug)]
 pub struct Cpu {
     /// 64-bit integer registers.
     pub xregs: XRegisters,
@@ -665,6 +666,39 @@ impl Cpu {
     /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
     /// the instruction executed in this cycle.
     pub fn execute(&mut self) -> Result<u64, Exception> {
+        // WFI is called and pending interrupts don't exist.
+        if self.idle {
+            return Ok(0);
+        }
+
+        // Fetch.
+        let inst16 = self.fetch(HALFWORD)?;
+        let inst;
+        match inst16 & 0b11 {
+            0 | 1 | 2 => {
+                if inst16 == 0 {
+                    // Unimplemented instruction, since all bits are 0.
+                    return Err(Exception::IllegalInstruction(inst16));
+                }
+                inst = inst16;
+                self.execute_compressed(inst)?;
+                // Add 2 bytes to the program counter.
+                self.pc += 2;
+            }
+            _ => {
+                inst = self.fetch(WORD)?;
+                self.execute_general(inst)?;
+                // Add 4 bytes to the program counter.
+                self.pc += 4;
+            }
+        }
+        self.pre_inst = inst;
+        Ok(inst)
+    }
+
+    /// Execute an instruction. Raises an exception if something is wrong, otherwise, returns
+    /// the instruction executed in this cycle.
+    pub fn eexecute(&mut self) -> Result<u64, Exception> {
         // WFI is called and pending interrupts don't exist.
         if self.idle {
             return Ok(0);
