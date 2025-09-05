@@ -153,7 +153,7 @@ impl TryFrom<&PathBuf> for ContractWithDeps {
         let mut contract_deps = Vec::new();
         if let Some(Value::Table(deps)) = cargo_toml.get("dependencies") {
             // Ensure required dependencies
-            if !(deps.contains_key("contract-derive") && deps.contains_key("eth-riscv-runtime")) {
+            if !(deps.contains_key("hybrid-derive") && deps.contains_key("hybrid-contract")) {
                 return Err(ContractError::MissingDependencies);
             }
 
