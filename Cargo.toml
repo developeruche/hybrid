@@ -1,5 +1,5 @@
 [workspace]
-members = [ "crates/hybrid-compile", "crates/hybrid-ethereum","crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
+members = [ "bins/cargo-hybrid", "crates/hybrid-compile", "crates/hybrid-ethereum","crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
 
 exclude = ["crates/hybrid-contract", "crates/hybrid-derive", "contracts/*"]
 
@@ -20,6 +20,7 @@ edition = "2021"
 # hybrid
 hybrid-syscalls = { path = "crates/hybrid-syscalls" }
 hybrid-vm = { path = "crates/hybrid-vm" }
+hybrid-compile = { path = "crates/hybrid-compile" }
 
 # rvemu
 rvemu = { path = "crates/rvemu" }
