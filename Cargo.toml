@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/hybrid-syscalls", "crates/rvemu"]
+members = ["crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
 
 exclude = ["crates/hybrid-contract", "crates/hybrid-derive", "contracts/*"]
 
@@ -17,3 +17,28 @@ edition = "2021"
 
 
 [workspace.dependencies]
+# hybrid
+hybrid-syscalls = { path = "crates/hybrid-syscalls" }
+hybrid-vm = { path = "crates/hybrid-vm" }
+
+# rvemu
+rvemu = { path = "crates/rvemu" }
+
+# error
+eyre = "0.6.12"
+thiserror = "2.0.3"
+
+#reth 
+reth = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12"}
+reth-ethereum = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
+reth-tracing = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
+reth-ethereum-payload-builder = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
+
+
+#alloy
+alloy-evm = { version = "0.5.0", default-features = false }
+alloy-genesis = { version = "0.14.0", default-features = false }
+alloy-primitives = { version = "1.0.0", default-features = false, features = ["map-foldhash"] }
+
+#revm
+revm = { version = "22.0.1", default-features = false }
