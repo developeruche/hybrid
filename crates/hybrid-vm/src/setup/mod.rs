@@ -1,6 +1,6 @@
 mod error;
-use rvemu::{bus::DRAM_BASE, dram::DRAM_SIZE, emulator::Emulator};
 pub use error::{Error, Result};
+use rvemu::{bus::DRAM_BASE, dram::DRAM_SIZE, emulator::Emulator};
 
 pub fn setup_from_elf(elf_data: &[u8], call_data: &[u8]) -> Result<Emulator> {
     let elf = goblin::elf::Elf::parse(elf_data)?;

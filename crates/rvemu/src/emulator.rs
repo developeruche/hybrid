@@ -1,7 +1,7 @@
 //! The emulator module represents an entire computer.
 
 use crate::cpu::Cpu;
-use crate::exception::Trap;
+use crate::exception::{Exception, Trap};
 
 /// The emulator to hold a CPU.
 pub struct Emulator {
@@ -147,6 +147,33 @@ impl Emulator {
                 }
                 _ => {}
             }
+        }
+    }
+
+    pub fn estart(&mut self) -> Result<(), Exception> {
+        if self.is_debug || self.cpu.is_count {
+            self.debug_start();
+        }
+
+        loop {
+            // Run a cycle on peripheral devices.
+            self.cpu.devices_increment();
+
+            // Take an interrupt.
+            match self.cpu.check_pending_interrupt() {
+                Some(interrupt) => interrupt.take_trap(&mut self.cpu),
+                None => {}
+            }
+
+            // Execute an instruction.
+            match self.cpu.execute() {
+                Ok(0) => {
+                    // Return wfi as a ok.
+                    return Ok(());
+                }
+                Err(exception) => return Err(exception),
+                _ => {} // No wfi or exception, keep running.
+            };
         }
     }
 }
