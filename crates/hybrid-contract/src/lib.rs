@@ -110,7 +110,7 @@ use alloy_core::primitives::{Address, U256};
 use core::{arch::asm, fmt::Write, panic::PanicInfo, slice};
 extern crate alloc as ext_alloc;
 
-mod allocator;
+mod allo;
 pub mod env;
 pub mod hstd;
 pub mod tx;
@@ -586,4 +586,10 @@ pub fn msg_data() -> &'static [u8] {
 #[no_mangle]
 fn DefaultHandler() {
     panic!("default handler");
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+fn ExceptionHandler(_trap_frame: &riscv_rt::TrapFrame) -> ! {
+    panic!("exception handler");
 }

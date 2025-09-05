@@ -673,6 +673,7 @@ impl Cpu {
         // Fetch.
         let inst16 = self.fetch(HALFWORD)?;
         let inst;
+        let result;
         match inst16 & 0b11 {
             0 | 1 | 2 => {
                 if inst16 == 0 {
@@ -680,17 +681,18 @@ impl Cpu {
                     return Err(Exception::IllegalInstruction(inst16));
                 }
                 inst = inst16;
-                self.execute_compressed(inst)?;
+                result = self.execute_compressed(inst);
                 // Add 2 bytes to the program counter.
                 self.pc += 2;
             }
             _ => {
                 inst = self.fetch(WORD)?;
-                self.execute_general(inst)?;
+                result = self.execute_general(inst);
                 // Add 4 bytes to the program counter.
                 self.pc += 4;
             }
         }
+        result?;
         self.pre_inst = inst;
         Ok(inst)
     }

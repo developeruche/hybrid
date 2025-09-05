@@ -4907,7 +4907,7 @@ dependencies = [
  "goblin",
  "hybrid-syscalls",
  "reth",
- "rvemu",
+ "rvemu 0.0.11",
  "thiserror 2.0.16",
 ]
 
@@ -10750,6 +10750,17 @@ dependencies = [
  "quick-error",
  "tempfile",
  "wait-timeout",
+]
+
+[[package]]
+name = "rvemu"
+version = "0.0.11"
+source = "git+https://github.com/r55-eth/rvemu.git#3f4f7a779c89b5545a4df4c0a864d41797fc35ef"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
