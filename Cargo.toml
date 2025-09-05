@@ -1,7 +1,17 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "crates/hybrid-compile", "crates/hybrid-ethereum","crates/hybrid-syscalls", "crates/hybrid-vm", "crates/rvemu"]
+members = [ 
+    "bins/cargo-hybrid", 
+    "bins/hybrid-node", 
+    "crates/hybrid-compile", 
+    "crates/hybrid-ethereum",
+    "crates/hybrid-syscalls", 
+    "crates/hybrid-vm", 
+    "crates/rvemu"]
 
-exclude = ["crates/hybrid-contract", "crates/hybrid-derive", "contracts/*"]
+exclude = [
+    "crates/hybrid-contract", 
+    "crates/hybrid-derive", 
+    "contracts/*"]
 
 
 [workspace.package]
@@ -21,6 +31,7 @@ edition = "2021"
 hybrid-syscalls = { path = "crates/hybrid-syscalls" }
 hybrid-vm = { path = "crates/hybrid-vm" }
 hybrid-compile = { path = "crates/hybrid-compile" }
+hybrid-ethereum = { path = "crates/hybrid-ethereum" }
 
 # rvemu
 rvemu = { path = "crates/rvemu" }
