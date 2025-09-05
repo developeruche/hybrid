@@ -25,6 +25,8 @@ pub use call::*;
 
 const CALLDATA_ADDRESS: usize = 0x8000_0000;
 
+pub use riscv_rt::entry;
+
 pub unsafe fn slice_from_raw_parts(address: usize, length: usize) -> &'static [u8] {
     slice::from_raw_parts(address as *const u8, length)
 }

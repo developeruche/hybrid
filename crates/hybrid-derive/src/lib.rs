@@ -146,7 +146,7 @@ pub fn error_derive(input: TokenStream) -> TokenStream {
     });
 
     let expanded = quote! {
-        impl eth_riscv_runtime::error::Error for #name {
+        impl hybrid_contract::error::Error for #name {
             fn abi_encode(&self) -> alloc::vec::Vec<u8> {
                 use alloy_core::primitives::keccak256;
                 use alloc::vec::Vec;
@@ -218,7 +218,7 @@ pub fn event_derive(input: TokenStream) -> TokenStream {
             }
         }
 
-        impl eth_riscv_runtime::log::Event for #name {
+        impl hybrid_contract::log::Event for #name {
             fn encode_log(&self) -> (alloc::vec::Vec<u8>, alloc::vec::Vec<[u8; 32]>) {
                 use alloy_sol_types::SolValue;
                 use alloy_core::primitives::{keccak256, B256};
@@ -304,7 +304,7 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
         // Check if there are payable methods
         let checks = if !is_payable(&method) {
             quote! {
-                if eth_riscv_runtime::msg_value() > U256::from(0) {
+                if hybrid_contract::msg_value() > U256::from(0) {
                     panic!("Non-payable function");
                 }
             }
@@ -327,10 +327,10 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
                                 let result_bytes = success.abi_encode();
                                 let result_size = result_bytes.len() as u64;
                                 let result_ptr = result_bytes.as_ptr() as u64;
-                                eth_riscv_runtime::return_riscv(result_ptr, result_size);
+                                hybrid_contract::return_riscv(result_ptr, result_size);
                             }
                             Err(err) => {
-                                eth_riscv_runtime::revert_with_error(&err.abi_encode());
+                                hybrid_contract::revert_with_error(&err.abi_encode());
                             }
                         }
                     },
@@ -340,9 +340,9 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
                                 let result_bytes = success.abi_encode();
                                 let result_size = result_bytes.len() as u64;
                                 let result_ptr = result_bytes.as_ptr() as u64;
-                                eth_riscv_runtime::return_riscv(result_ptr, result_size);
+                                hybrid_contract::return_riscv(result_ptr, result_size);
                             },
-                            None => eth_riscv_runtime::revert(),
+                            None => hybrid_contract::revert(),
                         }
                     },
                     helpers::WrapperType::None => quote! {
@@ -350,7 +350,7 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
                         let result_bytes = result.abi_encode();
                         let result_size = result_bytes.len() as u64;
                         let result_ptr = result_bytes.as_ptr() as u64;
-                        eth_riscv_runtime::return_riscv(result_ptr, result_size);
+                        hybrid_contract::return_riscv(result_ptr, result_size);
                     }
                 }
             }
@@ -407,10 +407,10 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 topics[0] = B256::from(keccak256(&signature));
 
                 if !data.is_empty() {
-                    eth_riscv_runtime::emit_log(&data, &topics);
+                    hybrid_contract::emit_log(&data, &topics);
                 } else if topics.len() > 1 {
                     let data = topics.pop().unwrap();
-                    eth_riscv_runtime::emit_log(data.as_ref(), &topics);
+                    hybrid_contract::emit_log(data.as_ref(), &topics);
                 }
             }};
         }
@@ -429,7 +429,7 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     // Generate the complete output with module structure
     let output = quote! {
-        use eth_riscv_runtime::*;
+        use hybrid_contract::*;
         use alloy_sol_types::SolValue;
 
         // Deploy module
@@ -437,7 +437,7 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
             pub mod deploy {
             use super::*;
             use alloy_sol_types::SolValue;
-            use eth_riscv_runtime::*;
+            use hybrid_contract::*;
 
             #emit_helper
             #deployment_code
@@ -459,7 +459,7 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
         mod implementation {
             use super::*;
             use alloy_sol_types::SolValue;
-            use eth_riscv_runtime::*;
+            use hybrid_contract::*;
 
             #emit_helper
 
@@ -482,11 +482,11 @@ pub fn contract(_attr: TokenStream, item: TokenStream) -> TokenStream {
                 }
             }
 
-            #[eth_riscv_runtime::entry]
+            #[hybrid_contract::entry]
             fn main() -> ! {
                 let mut contract = #struct_name::default();
                 contract.call();
-                eth_riscv_runtime::return_riscv(0, 0)
+                hybrid_contract::return_riscv(0, 0)
             }
         }
 

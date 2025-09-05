@@ -14,3 +14,4 @@ edition = "2021"
 alloy-core = { version = "0.8.20", default-features = false }
 alloy-sol-types = { version = "0.8.20", default-features = false }
 hybrid-syscalls = { path = "../hybrid-syscalls" }
+riscv-rt = "0.12.2"

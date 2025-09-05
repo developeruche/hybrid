@@ -230,12 +230,12 @@ fn generate_method_impl(
 
     let (call_fn, self_param) = if is_mutable {
         (
-            quote! { eth_riscv_runtime::call_contract },
+            quote! { hybrid_contract::call_contract },
             quote! { &mut self },
         )
     } else {
         (
-            quote! { eth_riscv_runtime::staticcall_contract },
+            quote! { hybrid_contract::staticcall_contract },
             quote! { &self},
         )
     };
@@ -552,7 +552,7 @@ pub fn generate_deployment_code(
                 impl #struct_name { #method }
 
                 // Get encoded constructor args
-                let calldata = eth_riscv_runtime::msg_data();
+                let calldata = hybrid_contract::msg_data();
 
                 let (#(#arg_names),*) = <(#(#arg_types),*)>::abi_decode(&calldata, true)
                     .expect("Failed to decode constructor args");
@@ -581,7 +581,7 @@ pub fn generate_deployment_code(
             let prepended_runtime_slice: &[u8] = &prepended_runtime;
             let result_ptr = prepended_runtime_slice.as_ptr() as u64;
             let result_len = prepended_runtime_slice.len() as u64;
-            eth_riscv_runtime::return_riscv(result_ptr, result_len);
+            hybrid_contract::return_riscv(result_ptr, result_len);
         }
     }
 }
