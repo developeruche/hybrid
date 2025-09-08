@@ -12,7 +12,7 @@ use reth::revm::{
     Database,
 };
 
-use crate::hybrid_execute::run_hybrid_interpreter;
+use crate::{hybrid_execute::run_hybrid_interpreter, mini_evm::run_mini_evm_interpreter};
 
 pub fn hybrid_frame_call<EVM>(
     frame: &mut EthFrame<
@@ -52,6 +52,6 @@ where
             EVMError<<<EVM::Context as ContextTr>::Db as Database>::Error, InvalidTransaction>,
         >(bytecode, frame, evm);
     } else {
-        return Frame::run(frame, evm);
+        return run_mini_evm_interpreter(frame, evm);
     }
 }

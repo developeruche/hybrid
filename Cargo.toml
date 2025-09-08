@@ -1,7 +1,7 @@
 [workspace]
 members = [ 
     "bins/cargo-hybrid", 
-    "bins/hybrid-node", 
+    "bins/hybrid-node", "bins/mini-evm-interpreter", 
     "crates/hybrid-compile", 
     "crates/hybrid-ethereum",
     "crates/hybrid-syscalls", 
@@ -53,13 +53,19 @@ alloy-genesis = { version = "0.14.0", default-features = false }
 alloy-primitives = { version = "1.0.0", default-features = false, features = ["map-foldhash"] }
 
 #revm
-revm = { version = "22.0.1", default-features = false }
+revm = { git = "https://github.com/developeruche/revm.git", default-features = false, branch = "hybrid-revm-v1", features = ["serde"]}
 
 # tracing (log)
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# serde 
+serde = { version = "1.0", default-features = false }
+serde_json = { version = "1.0", default-features = false }
+
 # misc
 anyhow = "1.0.98"
 indicatif = "0.17"
 colored = "2.1"
+bincode = "1.3"
+

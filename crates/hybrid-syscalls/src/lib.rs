@@ -99,3 +99,23 @@ syscalls!(
     // R55 exceptions
     (0x01, ReturnCreateAddress, "returncreateaddress"),
 );
+
+// Here are some opcodes that are not implemented yet;
+// 1. balance
+// 2. calldataload
+// 3. calldatasize
+// 4. calldatacopy
+// 5. codesize
+// 6. codecopy
+// 7. extcodesize
+// 8. extcodecopy
+// 9. extcodehash
+// 10. blockhash
+// 11. coinbase
+// 12. prevrandao
+// 13. selfbalance
+// 14. basefee
+// 15. blobhash
+// 16. blobbasefee
+// 17. gas
+// 18. delegatecall

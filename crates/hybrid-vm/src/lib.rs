@@ -5,4 +5,5 @@ pub mod execution;
 pub mod frame;
 pub mod handler;
 pub mod hybrid_execute;
+pub mod mini_evm;
 pub mod setup;
