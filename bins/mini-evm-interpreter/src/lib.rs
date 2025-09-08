@@ -7,62 +7,48 @@ use hybrid_contract::hstd::*;
 use hybrid_derive::{contract, payable, storage, Error, Event};
 extern crate alloc;
 
+mod instruction_table;
+mod utils;
 
-// #![no_std]
+use alloc::vec::Vec;
+use revm::{
+    handler::instructions::EthInstructions,
+    interpreter::{instruction_table, interpreter::EthInterpreter, Interpreter, InterpreterAction},
+    Context,
+};
+use serde::{Deserialize, Serialize};
 
-// use alloc::vec::Vec;
-// use hybrid_vm::eth_hybrid::EthEvmContext;
-// use revm::{
-//     handler::instructions::EthInstructions,
-//     interpreter::{instruction_table, interpreter::EthInterpreter, Interpreter, InterpreterAction},
-//     Context,
-// };
-// use serde::{Deserialize, Serialize};
+use crate::utils::{deserialize_input, serialize_output};
 
-// // use crate::utils::deserialize_input;
-// extern crate alloc;
+#[derive(Serialize, Deserialize)]
+pub struct Input {
+    context: Context,
+    interpreter: Interpreter,
+}
 
-// mod instruction_table;
-// mod utils;
-
-// #[derive(Serialize, Deserialize)]
-// pub struct Input {
-//     context: Context,
-//     interpreter: Interpreter,
-// }
-
-
-// #[derive(Serialize, Deserialize)]
-// pub struct Output {
-//     context: Context,
-//     interpreter: Interpreter,
-//     out: InterpreterAction
-// }
-
-
-
-// fn main() {
-//     let input = deserialize_input(&Vec::new()).unwrap();
-
-//     let mut context = input.context;
-//     let mut interpreter = input.interpreter;
-
-//     let out = interpreter.run_plain(&instruction_table(), &mut context);
-    
-//     let output = Output {
-//         context,
-//         interpreter,
-//         out,
-//     };
-
-    
-// }
-
-
+#[derive(Serialize, Deserialize)]
+pub struct Output {
+    context: Context,
+    interpreter: Interpreter,
+    out: InterpreterAction,
+}
 
 #[hybrid_contract::entry]
 fn main() -> ! {
-    // let mut contract = #struct_name::default();
-    // contract.call();
-    hybrid_contract::return_riscv(0, 0)
+    let input = deserialize_input().unwrap();
+
+    let mut context = input.context;
+    let mut interpreter = input.interpreter;
+
+    let out = interpreter.run_plain(&instruction_table(), &mut context);
+
+    let output = Output {
+        context,
+        interpreter,
+        out,
+    };
+
+    serialize_output(&output);
+
+    unreachable!()
 }

@@ -45,7 +45,7 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[KECCAK256 as usize] = system::keccak256;
 
     table[ADDRESS as usize] = system::address;
-    table[BALANCE as usize] = host::balance;
+    table[BALANCE as usize] = host::balance; // 1
     table[ORIGIN as usize] = tx_info::origin;
     table[CALLER as usize] = system::caller;
     table[CALLVALUE as usize] = system::callvalue;
@@ -56,19 +56,19 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[CODECOPY as usize] = system::codecopy;
 
     table[GASPRICE as usize] = tx_info::gasprice;
-    table[EXTCODESIZE as usize] = host::extcodesize;
-    table[EXTCODECOPY as usize] = host::extcodecopy;
+    table[EXTCODESIZE as usize] = host::extcodesize; // 2
+    table[EXTCODECOPY as usize] = host::extcodecopy; // 3
     table[RETURNDATASIZE as usize] = system::returndatasize;
     table[RETURNDATACOPY as usize] = system::returndatacopy;
-    table[EXTCODEHASH as usize] = host::extcodehash;
-    table[BLOCKHASH as usize] = host::blockhash;
+    table[EXTCODEHASH as usize] = host::extcodehash; // 4
+    table[BLOCKHASH as usize] = host::blockhash; // 5
     table[COINBASE as usize] = block_info::coinbase;
     table[TIMESTAMP as usize] = block_info::timestamp;
     table[NUMBER as usize] = block_info::block_number;
     table[DIFFICULTY as usize] = block_info::difficulty;
     table[GASLIMIT as usize] = block_info::gaslimit;
     table[CHAINID as usize] = block_info::chainid;
-    table[SELFBALANCE as usize] = host::selfbalance;
+    table[SELFBALANCE as usize] = host::selfbalance; // 6
     table[BASEFEE as usize] = block_info::basefee;
     table[BLOBHASH as usize] = tx_info::blob_hash;
     table[BLOBBASEFEE as usize] = block_info::blob_basefee;
@@ -77,16 +77,16 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[MLOAD as usize] = memory::mload;
     table[MSTORE as usize] = memory::mstore;
     table[MSTORE8 as usize] = memory::mstore8;
-    table[SLOAD as usize] = host::sload;
-    table[SSTORE as usize] = host::sstore;
+    table[SLOAD as usize] = host::sload; // 7
+    table[SSTORE as usize] = host::sstore; // 8
     table[JUMP as usize] = control::jump;
     table[JUMPI as usize] = control::jumpi;
     table[PC as usize] = control::pc;
     table[MSIZE as usize] = memory::msize;
     table[GAS as usize] = system::gas;
     table[JUMPDEST as usize] = control::jumpdest_or_nop;
-    table[TLOAD as usize] = host::tload;
-    table[TSTORE as usize] = host::tstore;
+    table[TLOAD as usize] = host::tload; // 9
+    table[TSTORE as usize] = host::tstore; // 10
     table[MCOPY as usize] = memory::mcopy;
 
     table[PUSH0 as usize] = stack::push0;
@@ -157,11 +157,11 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[SWAP15 as usize] = stack::swap::<15, _, _>;
     table[SWAP16 as usize] = stack::swap::<16, _, _>;
 
-    table[LOG0 as usize] = host::log::<0, _>;
-    table[LOG1 as usize] = host::log::<1, _>;
-    table[LOG2 as usize] = host::log::<2, _>;
-    table[LOG3 as usize] = host::log::<3, _>;
-    table[LOG4 as usize] = host::log::<4, _>;
+    table[LOG0 as usize] = host::log::<0, _>; // 11
+    table[LOG1 as usize] = host::log::<1, _>; // 12
+    table[LOG2 as usize] = host::log::<2, _>; // 13
+    table[LOG3 as usize] = host::log::<3, _>; // 14
+    table[LOG4 as usize] = host::log::<4, _>; // 15
 
     table[DATALOAD as usize] = data::data_load;
     table[DATALOADN as usize] = data::data_loadn;
@@ -183,19 +183,19 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[RETURNCONTRACT as usize] = contract::return_contract;
 
     table[CREATE as usize] = contract::create::<_, false, _>;
-    table[CALL as usize] = contract::call;
-    table[CALLCODE as usize] = contract::call_code;
+    table[CALL as usize] = contract::call; // 15
+    table[CALLCODE as usize] = contract::call_code; // 16
     table[RETURN as usize] = control::ret;
-    table[DELEGATECALL as usize] = contract::delegate_call;
+    table[DELEGATECALL as usize] = contract::delegate_call; // 17
     table[CREATE2 as usize] = contract::create::<_, true, _>;
 
     table[RETURNDATALOAD as usize] = system::returndataload;
-    table[EXTCALL as usize] = contract::extcall;
-    table[EXTDELEGATECALL as usize] = contract::extdelegatecall;
-    table[STATICCALL as usize] = contract::static_call;
-    table[EXTSTATICCALL as usize] = contract::extstaticcall;
+    table[EXTCALL as usize] = contract::extcall; // 18
+    table[EXTDELEGATECALL as usize] = contract::extdelegatecall; // 19
+    table[STATICCALL as usize] = contract::static_call; // 20
+    table[EXTSTATICCALL as usize] = contract::extstaticcall; // 21
     table[REVERT as usize] = control::revert;
     table[INVALID as usize] = control::invalid;
-    table[SELFDESTRUCT as usize] = host::selfdestruct;
+    table[SELFDESTRUCT as usize] = host::selfdestruct; // 22
     table
 }

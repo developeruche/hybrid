@@ -162,6 +162,10 @@ pub unsafe fn slice_from_raw_parts(address: usize, length: usize) -> &'static [u
     slice::from_raw_parts(address as *const u8, length)
 }
 
+pub unsafe fn slice_from_raw_parts_mut(address: usize, length: usize) -> &'static mut [u8] {
+    slice::from_raw_parts_mut(address as *mut u8, length)
+}
+
 /// Global panic handler for the contract execution environment.
 ///
 /// This panic handler is called whenever a panic occurs in the contract code.
