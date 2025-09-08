@@ -1,7 +1,7 @@
 [workspace]
 members = [ 
     "bins/cargo-hybrid", 
-    "bins/hybrid-node", "bins/mini-evm-interpreter", 
+    "bins/hybrid-node", 
     "crates/hybrid-compile", 
     "crates/hybrid-ethereum",
     "crates/hybrid-syscalls", 
@@ -11,7 +11,8 @@ members = [
 exclude = [
     "crates/hybrid-contract", 
     "crates/hybrid-derive", 
-    "contracts/*"]
+    "contracts/*",
+    "bins/mini-evm-interpreter"]
 
 
 [workspace.package]
@@ -32,6 +33,7 @@ hybrid-syscalls = { path = "crates/hybrid-syscalls" }
 hybrid-vm = { path = "crates/hybrid-vm" }
 hybrid-compile = { path = "crates/hybrid-compile" }
 hybrid-ethereum = { path = "crates/hybrid-ethereum" }
+hybrid-contract = { path = "crates/hybrid-contract" }
 
 # rvemu
 rvemu = { path = "crates/rvemu" }

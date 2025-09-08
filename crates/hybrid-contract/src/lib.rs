@@ -110,7 +110,7 @@ use alloy_core::primitives::{Address, U256};
 use core::{arch::asm, fmt::Write, panic::PanicInfo, slice};
 extern crate alloc as ext_alloc;
 
-mod allo;
+mod allocator;
 pub mod env;
 pub mod hstd;
 pub mod tx;
@@ -129,7 +129,7 @@ pub use call::*;
 
 /// Memory address where calldata is mapped in the contract's address space.
 /// The first 8 bytes contain the calldata length, followed by the actual calldata.
-const CALLDATA_ADDRESS: usize = 0x8000_0000;
+pub const CALLDATA_ADDRESS: usize = 0x8000_0000;
 
 pub use riscv_rt::entry;
 
