@@ -4,13 +4,13 @@ use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_A
 
 use crate::{Input, Output};
 
-pub fn deserialize_input() -> Result<Input, String> {
+pub fn read_input() -> Result<Input, String> {
     let input = copy_from_mem();
     let deserialized: Input = serde_json::from_slice(&input).unwrap();
     Ok(deserialized)
 }
 
-pub fn serialize_output(output: &Output) {
+pub fn write_output(output: &Output) {
     let serialized = serde_json::to_vec(output).unwrap();
     unsafe {
         write_to_memory(CALLDATA_ADDRESS, &serialized);

@@ -13,4 +13,4 @@ edition.workspace = true
 [dependencies]
 serde = { workspace = true, default-features = false }
 serde_json = { workspace = true, default-features = false, features = ["alloc"] }
-reth.workspace = true
+revm.workspace = true

@@ -34,6 +34,7 @@ hybrid-vm = { path = "crates/hybrid-vm" }
 hybrid-compile = { path = "crates/hybrid-compile" }
 hybrid-ethereum = { path = "crates/hybrid-ethereum" }
 hybrid-contract = { path = "crates/hybrid-contract" }
+hybrid-primitives = { path = "crates/hybrid-primitives" }
 
 # rvemu
 rvemu = { path = "crates/rvemu" }
@@ -71,6 +72,3 @@ indicatif = "0.17"
 colored = "2.1"
 bincode = "1.3"
 
-
-# [patch.crates-io]
-# revm-context = { git = "https://github.com/developeruche/revm", default-features = false, branch = "hybrid-revm-v2", features = ["serde"], version = "3.0.0" }
