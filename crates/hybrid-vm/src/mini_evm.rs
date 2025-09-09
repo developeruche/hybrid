@@ -6,14 +6,15 @@
 //! r55 github: http://github.com/r55-eth/r55/
 
 use reth::revm::{
-    context::{result::FromStringError, ContextTr, JournalTr},
+    context::{result::FromStringError, Context, JournalTr},
     handler::{
         instructions::InstructionProvider, ContextTrDbError, EthFrame, EvmTr, FrameInitOrResult,
         PrecompileProvider,
     },
-    interpreter::{interpreter::EthInterpreter, FrameInput, InterpreterResult},
+    interpreter::{interpreter::EthInterpreter, FrameInput, Interpreter, InterpreterResult},
     primitives::alloy_primitives::U32,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{execution::execute_riscv, setup::setup_from_elf};
 

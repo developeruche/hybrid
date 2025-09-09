@@ -1,5 +1,5 @@
 [package]
-name = "hybrid-vm"
+name = "hybrid-primitives"
 version.workspace = true
 license.workspace = true
 authors.workspace = true
@@ -11,13 +11,6 @@ homepage.workspace = true
 edition.workspace = true
 
 [dependencies]
-reth.workspace = true
-alloy-evm.workspace = true
-hybrid-syscalls.workspace = true
-goblin = { version = "0.8.2", features = ["std"] }
-rvemu.workspace = true
-thiserror.workspace = true
 serde = { workspace = true, default-features = false }
 serde_json = { workspace = true, default-features = false, features = ["alloc"] }
-
-
+reth.workspace = true

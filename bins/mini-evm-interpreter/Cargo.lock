@@ -744,19 +744,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
-name = "erc20"
-version = "0.1.0"
-dependencies = [
- "alloy-core",
- "alloy-sol-types",
- "hybrid-contract",
- "hybrid-derive",
- "revm",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "ff"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -971,6 +958,19 @@ name = "memchr"
 version = "2.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
+
+[[package]]
+name = "mini-evm-interpreter"
+version = "0.1.0"
+dependencies = [
+ "alloy-core",
+ "alloy-sol-types",
+ "hybrid-contract",
+ "hybrid-derive",
+ "revm",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "num"
