@@ -1,12 +1,23 @@
 use reth::revm::{
-    context::{ContextSetters, ContextTr, Evm, EvmData},
+    context::{
+        Block, BlockEnv, Cfg, CfgEnv, ContextSetters, ContextTr, Evm, EvmData, JournalTr,
+        Transaction, TxEnv,
+    },
+    db::EmptyDB,
     handler::{
         instructions::{EthInstructions, InstructionProvider},
         EthPrecompiles, EvmTr,
     },
     inspector::{inspect_instructions, InspectorEvmTr, JournalExt},
     interpreter::{interpreter::EthInterpreter, Interpreter, InterpreterTypes},
-    Inspector,
+    Context, Inspector, Journal,
+};
+use serde::Serialize;
+
+use crate::{
+    execution::helper::dram_slice,
+    mini_evm_coding::{deserialize_output, serialize_input, Input},
+    setup::setup_from_mini_elf,
 };
 
 /// HybridEvm variant of the EVM.
@@ -55,9 +66,107 @@ where
     ) -> <<Self::Instructions as InstructionProvider>::InterpreterTypes as InterpreterTypes>::Output
     {
         let context = &mut self.0.data.ctx;
-        let instructions = &mut self.0.instruction;
+        // let instructions = &self.0.instruction;
 
-        interpreter.run_plain(instructions.instruction_table(), context)
+        // interpreter.run_plain(instructions.instruction_table(), context)
+
+        let serialized_interpreter = serde_json::to_vec(interpreter).unwrap();
+        let sss: Interpreter = serde_json::from_slice(&serialized_interpreter).unwrap();
+
+        println!(
+            "This is the serial interpreter: {:?}",
+            serialized_interpreter
+        );
+
+        let block = BlockEnv {
+            basefee: context.block().basefee(),
+            beneficiary: context.block().beneficiary(),
+            blob_excess_gas_and_price: context.block().blob_excess_gas_and_price(),
+            difficulty: context.block().difficulty(),
+            gas_limit: context.block().gas_limit(),
+            number: context.block().number(),
+            prevrandao: context.block().prevrandao(),
+            timestamp: context.block().timestamp(),
+        };
+
+        let mut cfg = CfgEnv::new();
+        cfg.chain_id = context.cfg().chain_id();
+
+        let mut tx = TxEnv::default();
+        tx.access_list = Default::default();
+        tx.authorization_list = Default::default();
+        tx.blob_hashes = context.tx().blob_versioned_hashes().to_vec();
+        tx.caller = context.tx().caller();
+        tx.chain_id = context.tx().chain_id();
+        tx.data = context.tx().input().clone();
+        tx.gas_limit = context.tx().gas_limit();
+        tx.gas_price = context.tx().gas_price();
+        tx.gas_priority_fee = context.tx().max_priority_fee_per_gas();
+        tx.kind = context.tx().kind();
+        tx.max_fee_per_blob_gas = context.tx().max_fee_per_blob_gas();
+        tx.nonce = context.tx().nonce();
+        tx.tx_type = context.tx().tx_type();
+        tx.value = context.tx().value();
+
+        let db = EmptyDB::new();
+        let c: Context = Context {
+            block: block,
+            cfg: cfg,
+            chain: (),
+            error: Ok(()),
+            journaled_state: Journal::new(db),
+            tx: tx,
+        };
+
+        let emu_input = serialize_input(&serialized_interpreter, &c).unwrap();
+
+        println!("Emu Input: {:?}", emu_input);
+
+        let mini_evm_bin: &[u8] = include_bytes!("../mini-interpreter");
+
+        let mut emulator = match setup_from_mini_elf(mini_evm_bin, &emu_input) {
+            Ok(emulator) => emulator,
+            Err(err) => {
+                // TODO:: handle this gracefully
+                panic!("Error occurred setting up emulator")
+            }
+        };
+
+        let return_res = emulator.estart();
+
+        match return_res {
+            Ok(_) => (),
+            Err(err) => {
+                println!("Emulator Error Occured: {:?}", err)
+            }
+        }
+
+        let interpreter_output_size: u64 = emulator.cpu.xregs.read(10);
+        println!("Interpreter output size: {}", interpreter_output_size);
+
+        let raw_output = dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
+
+        let (o_interpreter, _, o_action) = deserialize_output(raw_output).unwrap();
+
+        println!("o_interpreter.bytecode: {:?}", o_interpreter.bytecode);
+        println!("o_interpreter.extend: {:?}", o_interpreter.extend);
+        println!("o_interpreter.input: {:?}", o_interpreter.input);
+        println!("o_interpreter.memory: {:?}", o_interpreter.memory);
+        println!("o_interpreter.return_data: {:?}", o_interpreter.return_data);
+        println!("o_interpreter.stack: {:?}", o_interpreter.stack);
+        println!("o_interpreter.sub_routine: {:?}", o_interpreter.sub_routine);
+
+        interpreter.bytecode = o_interpreter.bytecode;
+        interpreter.control = o_interpreter.control;
+        interpreter.extend = o_interpreter.extend;
+        interpreter.input = o_interpreter.input;
+        interpreter.memory = o_interpreter.memory;
+        interpreter.return_data = o_interpreter.return_data;
+        interpreter.stack = o_interpreter.stack;
+        interpreter.sub_routine = o_interpreter.sub_routine;
+        interpreter.runtime_flag = o_interpreter.runtime_flag;
+
+        o_action
     }
 
     fn ctx_precompiles(&mut self) -> (&mut Self::Context, &mut Self::Precompiles) {

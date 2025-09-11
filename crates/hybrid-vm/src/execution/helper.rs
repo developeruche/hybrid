@@ -56,7 +56,7 @@ pub fn dram_slice(emu: &mut Emulator, ret_offset: u64, ret_size: u64) -> Result<
             .cpu
             .bus
             .get_dram_slice(ret_offset..(ret_offset + ret_size))
-            .map_err(|_| "Failed to get DRAM slice".to_string())?)
+            .map_err(|e| "Failed to get DRAM slice".to_string() + ": " + &e.exception_message())?)
     } else {
         Ok(&mut [])
     }

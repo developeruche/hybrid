@@ -25,7 +25,7 @@ use crate::{
 pub mod gas;
 pub mod helper;
 
-pub fn execute_riscv<EVM>(
+pub fn execute_riscv_contract<EVM>(
     emu: &mut Emulator,
     interpreter: &mut Interpreter,
     evm: &mut EVM,

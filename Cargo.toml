@@ -3,7 +3,7 @@ members = [
     "bins/cargo-hybrid", 
     "bins/hybrid-node", 
     "crates/hybrid-compile", 
-    "crates/hybrid-ethereum", "crates/hybrid-primitives",
+    "crates/hybrid-ethereum",
     "crates/hybrid-syscalls", 
     "crates/hybrid-vm", 
     "crates/rvemu"]
@@ -34,7 +34,6 @@ hybrid-vm = { path = "crates/hybrid-vm" }
 hybrid-compile = { path = "crates/hybrid-compile" }
 hybrid-ethereum = { path = "crates/hybrid-ethereum" }
 hybrid-contract = { path = "crates/hybrid-contract" }
-hybrid-primitives = { path = "crates/hybrid-primitives" }
 
 # rvemu
 rvemu = { path = "crates/rvemu" }
@@ -64,11 +63,10 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # serde 
-serde = { version = "1.0", default-features = false }
-serde_json = { version = "1.0.143", default-features = false, features = ["alloc"] }
+serde = { version = "1.0", default-features = false, features = ["derive", "rc"] }
+serde_json = { version = "1.0", default-features = false }
 
 # misc
 indicatif = "0.17"
 colored = "2.1"
 bincode = "1.3"
-

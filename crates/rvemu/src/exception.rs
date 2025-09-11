@@ -64,6 +64,25 @@ impl Exception {
         }
     }
 
+    pub fn exception_message(&self) -> String {
+        match self {
+            Exception::InstructionAddressMisaligned => "Instruction address misaligned".to_string(),
+            Exception::InstructionAccessFault => "Instruction access fault".to_string(),
+            Exception::IllegalInstruction(_) => "Illegal instruction".to_string(),
+            Exception::Breakpoint => "Breakpoint".to_string(),
+            Exception::LoadAddressMisaligned => "Load address misaligned".to_string(),
+            Exception::LoadAccessFault => "Load access fault".to_string(),
+            Exception::StoreAMOAddressMisaligned => "Store/AMO address misaligned".to_string(),
+            Exception::StoreAMOAccessFault => "Store/AMO access fault".to_string(),
+            Exception::EnvironmentCallFromUMode => "Environment call from U-mode".to_string(),
+            Exception::EnvironmentCallFromSMode => "Environment call from S-mode".to_string(),
+            Exception::EnvironmentCallFromMMode => "Environment call from M-mode".to_string(),
+            Exception::InstructionPageFault(_) => "Instruction page fault".to_string(),
+            Exception::LoadPageFault(_) => "Load page fault".to_string(),
+            Exception::StoreAMOPageFault(_) => "Store/AMO page fault".to_string(),
+        }
+    }
+
     fn epc(&self, pc: u64) -> u64 {
         // 3.2.1 Environment Call and Breakpoint
         // "ECALL and EBREAK cause the receiving privilege mode’s epc register to be set to the

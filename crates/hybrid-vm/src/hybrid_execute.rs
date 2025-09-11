@@ -12,7 +12,7 @@ use reth::revm::{
     primitives::alloy_primitives::U32,
 };
 
-use crate::{execution::execute_riscv, setup::setup_from_elf};
+use crate::{execution::execute_riscv_contract, setup::setup_from_elf};
 
 pub fn run_hybrid_interpreter<EVM, ERROR>(
     bytecode: &[u8],
@@ -64,7 +64,7 @@ where
         }
     };
 
-    let interpreter_action = execute_riscv(
+    let interpreter_action = execute_riscv_contract(
         &mut emulator,
         &mut frame.interpreter,
         evm,

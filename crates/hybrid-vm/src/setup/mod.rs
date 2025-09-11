@@ -25,6 +25,29 @@ pub fn setup_from_elf(elf_data: &[u8], call_data: &[u8]) -> Result<Emulator> {
     Ok(emu)
 }
 
+pub fn setup_from_mini_elf(elf_data: &[u8], call_data: &[u8]) -> Result<Emulator> {
+    let elf = goblin::elf::Elf::parse(elf_data)?;
+
+    // Allocate 5MB for the call data
+    let mut mem = vec![0; 1024 * 1024 * 5];
+    {
+        assert!(call_data.len() < mem.len() - 8);
+
+        let (size_bytes, data_bytes) = mem.split_at_mut(8);
+        size_bytes.copy_from_slice(&(call_data.len() as u64).to_le_bytes());
+        data_bytes[..call_data.len()].copy_from_slice(call_data);
+    }
+
+    load_sections(&mut mem, &elf, elf_data);
+
+    let mut emu = Emulator::new();
+
+    emu.initialize_dram(mem);
+    emu.initialize_pc(elf.header.e_entry);
+
+    Ok(emu)
+}
+
 fn load_sections(mem: &mut Vec<u8>, elf: &goblin::elf::Elf, elf_data: &[u8]) {
     for ph in &elf.program_headers {
         if ph.p_type == goblin::elf::program_header::PT_LOAD {
