@@ -21,6 +21,7 @@ revm = { git = "https://github.com/developeruche/revm.git", default-features = f
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1.0.143", default-features = false, features = ["alloc"] }
 
+bincode = { version = "2.0", features = ["serde"], default-features = false }
 
 [[bin]]
 name = "runtime"
