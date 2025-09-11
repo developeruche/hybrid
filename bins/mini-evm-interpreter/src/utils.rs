@@ -1,7 +1,7 @@
 //! Utilities for the mini-evm interpreter.
-use alloc::format;
 use alloc::string::String;
 use alloc::vec::Vec;
+use core::arch::asm;
 use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
 use revm::{
     context::{BlockEnv, CfgEnv, JournalTr, TxEnv},
@@ -12,7 +12,7 @@ use revm::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{Input, Output};
+use crate::Output;
 
 pub fn read_input() -> Result<(Interpreter, Context), String> {
     let input = copy_from_mem();
@@ -24,6 +24,14 @@ pub fn read_input() -> Result<(Interpreter, Context), String> {
 pub fn write_output(output: &Output) {
     let s_interpreter = serde_json::to_vec(&output.interpreter).unwrap();
     let serialized = serialize_output(&s_interpreter, &output.context, &output.out);
+    let length = serialized.len() as u64;
+
+    unsafe {
+        asm!(
+            "mv a0, {val}",
+            val = in(reg) length,
+        );
+    }
     unsafe {
         write_to_memory(CALLDATA_ADDRESS, &serialized);
     }
