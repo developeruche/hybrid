@@ -18,7 +18,7 @@ use revm::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::utils::{deserialize_input, serialize_output};
+use crate::utils::{read_input, write_output};
 
 #[derive(Serialize, Deserialize)]
 pub struct Input {
@@ -35,10 +35,10 @@ pub struct Output {
 
 #[hybrid_contract::entry]
 fn main() -> ! {
-    let input = deserialize_input().unwrap();
+    let input = read_input().unwrap();
 
-    let mut context = input.context;
-    let mut interpreter = input.interpreter;
+    let mut context = input.1;
+    let mut interpreter = input.0;
 
     let out = interpreter.run_plain(&instruction_table(), &mut context);
 
@@ -48,7 +48,7 @@ fn main() -> ! {
         out,
     };
 
-    serialize_output(&output);
+    write_output(&output);
 
     unreachable!()
 }

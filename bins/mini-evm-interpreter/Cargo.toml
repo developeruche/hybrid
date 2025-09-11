@@ -13,7 +13,6 @@ interface-only = []
 [dependencies]
 hybrid-derive = { path = "../../crates/hybrid-derive"}
 hybrid-contract = { path = "../../crates/hybrid-contract"}
-hybrid-primitives = { path = "../../crates/hybrid-primitives"}
 
 alloy-core = { version = "0.8.20", default-features = false }
 alloy-sol-types = { version = "0.8.20", default-features = false }
