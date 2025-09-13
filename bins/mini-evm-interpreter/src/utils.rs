@@ -22,7 +22,7 @@ pub fn read_input() -> Result<(Interpreter, Context), String> {
 }
 
 pub fn write_output(output: &Output) {
-    let s_interpreter = serde_json::to_vec(&output.interpreter).unwrap();
+    let s_interpreter = bincode::serde::encode_to_vec(&output.interpreter, bincode::config::legacy()).unwrap();
     let serialized = serialize_output(&s_interpreter, &output.context, &output.out);
     let length = serialized.len() as u64;
 
@@ -132,12 +132,12 @@ pub fn deserialize_input(data: &[u8]) -> (Interpreter, Context) {
 
     // Extract the context bytes and deserialize
     let context_bytes = &data[16..16 + sc_len];
-    let mini_context: MiniContext = serde_json::from_slice(context_bytes).unwrap();
+    let mini_context: MiniContext = bincode::serde::decode_from_slice(context_bytes, bincode::config::legacy()).unwrap().0;
     let context = Context::from(mini_context);
 
     // Extract the interpreter bytes
     let interpreter_bytes = &data[16 + sc_len..16 + sc_len + mc_len];
-    let interpreter: Interpreter = serde_json::from_slice(interpreter_bytes).unwrap();
+    let interpreter: Interpreter = bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy()).unwrap().0;
 
     (interpreter, context)
 }
@@ -148,8 +148,8 @@ pub fn serialize_output(
     out: &InterpreterAction,
 ) -> Vec<u8> {
     let mini_context = MiniContext::from_context(context.clone());
-    let s_context = serde_json::to_vec(&mini_context).unwrap();
-    let s_out = serde_json::to_vec(out).unwrap();
+    let s_context = bincode::serde::encode_to_vec(&mini_context, bincode::config::legacy()).unwrap();
+    let s_out = bincode::serde::encode_to_vec(out, bincode::config::legacy()).unwrap();
 
     let sc_len = s_context.len();
     let mc_len = s_interpreter.len();
