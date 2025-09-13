@@ -19,4 +19,4 @@ rvemu.workspace = true
 thiserror.workspace = true
 serde = { workspace = true, default-features = false }
 serde_json = { workspace = true, default-features = false, features = ["alloc"] }
-
+bincode.workspace = true

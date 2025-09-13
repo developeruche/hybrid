@@ -29,7 +29,8 @@ pub fn setup_from_mini_elf(elf_data: &[u8], call_data: &[u8]) -> Result<Emulator
     let elf = goblin::elf::Elf::parse(elf_data)?;
 
     // Allocate 5MB for the call data
-    let mut mem = vec![0; 1024 * 1024 * 5];
+    const MEM_LEN: usize = 5 * 1024 * 1024;
+    let mut mem = vec![0; MEM_LEN];
     {
         assert!(call_data.len() < mem.len() - 8);
 

@@ -3,7 +3,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::arch::asm;
 use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
-use revm::{
+use ext_revm::{
     context::{BlockEnv, CfgEnv, JournalTr, TxEnv},
     context_interface::context::ContextError,
     database::EmptyDB,
@@ -19,6 +19,20 @@ pub fn read_input() -> Result<(Interpreter, Context), String> {
     let interpreter_n_context = deserialize_input(input);
 
     Ok(interpreter_n_context)
+}
+
+
+pub unsafe fn debug_println() {
+    let address = CALLDATA_ADDRESS + (1024 * 1024 * 1024) - 2000;
+    let data = b"Hello, world!";
+    let dest = slice_from_raw_parts_mut(address, data.len());
+    dest.copy_from_slice(data);
+}
+
+pub unsafe fn debug_println_dyn_data(data: &[u8]) {
+    let address = CALLDATA_ADDRESS + (1024 * 1024 * 1024) - 2000;
+    let dest = slice_from_raw_parts_mut(address, data.len());
+    dest.copy_from_slice(data);
 }
 
 pub fn write_output(output: &Output) {
@@ -74,6 +88,10 @@ pub struct MiniContext<
     pub error: Result<(), ContextError<DB::Error>>,
 }
 
+fn default_result<DB: Database>() -> Result<(), ContextError<DB::Error>> {
+    Ok(())
+}
+
 impl MiniContext {
     pub fn from_context(context: Context) -> Self {
         Self {
@@ -85,10 +103,6 @@ impl MiniContext {
             error: context.error,
         }
     }
-}
-
-fn default_result<DB: Database>() -> Result<(), ContextError<DB::Error>> {
-    Ok(())
 }
 
 impl From<MiniContext> for Context {
@@ -107,6 +121,7 @@ impl From<MiniContext> for Context {
 pub fn deserialize_input(data: &[u8]) -> (Interpreter, Context) {
     // Check minimum length for headers (16 bytes for two u64 lengths)
     if data.len() < 16 {
+        // return Err("Data too short for headers".into());
         panic!("Data too short for headers");
     }
 
@@ -123,21 +138,19 @@ pub fn deserialize_input(data: &[u8]) -> (Interpreter, Context) {
         //     data.len()
         // )
         // .into());
-        panic!(
-            "Data length mismatch: expected {}, got {}",
-            expected_len,
-            data.len()
-        );
+        panic!("Data length mismatch: expected {}, got {}", expected_len, data.len());
     }
 
     // Extract the context bytes and deserialize
     let context_bytes = &data[16..16 + sc_len];
     let mini_context: MiniContext = bincode::serde::decode_from_slice(context_bytes, bincode::config::legacy()).unwrap().0;
+    unsafe { debug_println() };
     let context = Context::from(mini_context);
 
     // Extract the interpreter bytes
     let interpreter_bytes = &data[16 + sc_len..16 + sc_len + mc_len];
-    let interpreter: Interpreter = bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy()).unwrap().0;
+    
+    let interpreter = bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy()).unwrap().0;
 
     (interpreter, context)
 }

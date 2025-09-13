@@ -12,11 +12,10 @@ use reth::revm::{
     interpreter::{interpreter::EthInterpreter, Interpreter, InterpreterTypes},
     Context, Inspector, Journal,
 };
-use serde::Serialize;
 
 use crate::{
     execution::helper::dram_slice,
-    mini_evm_coding::{deserialize_output, serialize_input, Input},
+    mini_evm_coding::{deserialize_output, serialize_input},
     setup::setup_from_mini_elf,
 };
 
@@ -70,13 +69,7 @@ where
 
         // interpreter.run_plain(instructions.instruction_table(), context)
 
-        let serialized_interpreter = serde_json::to_vec(interpreter).unwrap();
-        let sss: Interpreter = serde_json::from_slice(&serialized_interpreter).unwrap();
-
-        println!(
-            "This is the serial interpreter: {:?}",
-            serialized_interpreter
-        );
+        let serialized_interpreter = bincode::serde::encode_to_vec(&interpreter, bincode::config::legacy()).unwrap();
 
         let block = BlockEnv {
             basefee: context.block().basefee(),
@@ -118,11 +111,11 @@ where
             tx: tx,
         };
 
-        let emu_input = serialize_input(&serialized_interpreter, &c).unwrap();
+        let emu_input = serialize_input(&serialized_interpreter, &c);
+        
+        println!("Emulator input: {:?}", emu_input);
 
-        println!("Emu Input: {:?}", emu_input);
-
-        let mini_evm_bin: &[u8] = include_bytes!("../mini-interpreter");
+        let mini_evm_bin: &[u8] = include_bytes!("../../../bins/mini-evm-interpreter/target/riscv64imac-unknown-none-elf/release/runtime");
 
         let mut emulator = match setup_from_mini_elf(mini_evm_bin, &emu_input) {
             Ok(emulator) => emulator,
@@ -143,6 +136,9 @@ where
 
         let interpreter_output_size: u64 = emulator.cpu.xregs.read(10);
         println!("Interpreter output size: {}", interpreter_output_size);
+        
+        println!("Register dump: {:?}", emulator.cpu.xregs);
+        println!("Register dump - display: {}", emulator.cpu.xregs);
 
         let raw_output = dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
 
@@ -225,5 +221,55 @@ impl<CTX, INSP> HybridEvm<CTX, INSP> {
     /// Consumes self and returns inner Inspector.
     pub fn into_inspector(self) -> INSP {
         self.0.data.inspector
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use reth::{revm::{context_interface::block::BlobExcessGasAndPrice, primitives::{Address, Bytes, TxKind, B256, U256}}, rpc::types::AccessList};
+    use rvemu::bus::DRAM_BASE;
+
+    use crate::mini_evm_coding::MiniContext;
+
+    use super::*;
+
+    
+    #[test]
+    fn test_mini_interpreter_emulator() {
+        let emu_input = &[195, 2, 0, 0, 0, 0, 0, 0, 142, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 243, 0, 192, 112, 39, 52, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 154, 128, 77, 211, 231, 224, 24, 151, 92, 16, 128, 79, 29, 191, 60, 164, 211, 181, 169, 42, 69, 88, 244, 226, 128, 172, 36, 155, 215, 149, 147, 93, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 136, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 98, 105, 116, 118, 101, 99, 58, 58, 111, 114, 100, 101, 114, 58, 58, 76, 115, 98, 48, 8, 0, 25, 1, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0, 0, 32, 0, 0, 0, 128, 0, 0, 32, 4, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 95, 189, 178, 49, 86, 120, 175, 236, 179, 103, 240, 50, 217, 63, 100, 47, 100, 24, 10, 163, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 64, 34, 255, 255, 255, 135, 243, 0, 64, 34, 255, 255, 255, 135, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0];
+        
+        let mini_evm_bin: &[u8] = include_bytes!("../../../bins/mini-evm-interpreter/target/riscv64imac-unknown-none-elf/release/runtime");
+
+        let mut emulator = match setup_from_mini_elf(mini_evm_bin, emu_input) {
+            Ok(emulator) => emulator,
+            Err(err) => {
+                // TODO:: handle this gracefully
+                panic!("Error occurred setting up emulator")
+            }
+        };
+
+        let return_res = emulator.estart();
+
+        match return_res {
+            Ok(_) => (),
+            Err(err) => {
+                println!("Emulator Error Occured: {:?}", err)
+            }
+        }
+
+        let interpreter_output_size: u64 = emulator.cpu.xregs.read(10);
+        println!("Interpreter output size: {}", interpreter_output_size);
+        
+        
+        let debug_addr = DRAM_BASE + (1024 * 1024 * 1024) - 2000;
+        let debug_output = dram_slice(&mut emulator, debug_addr, 13).unwrap();
+        println!("Out Debug:: -> {:?}", std::str::from_utf8(debug_output));
+        // println!("Out Debug:: -> {:?}", debug_output);
+
+        // let raw_output = dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
+
+        // let (o_interpreter, _, o_action) = deserialize_output(raw_output).unwrap();
     }
 }

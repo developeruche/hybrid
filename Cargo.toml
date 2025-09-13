@@ -65,8 +65,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # serde 
 serde = { version = "1.0", default-features = false, features = ["derive", "rc"] }
 serde_json = { version = "1.0", default-features = false }
+bincode = { version = "2.0", features = ["serde", "alloc"], default-features = false }
 
 # misc
 indicatif = "0.17"
 colored = "2.1"
-bincode = "1.3"
