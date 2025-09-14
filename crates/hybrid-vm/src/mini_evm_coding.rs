@@ -7,241 +7,154 @@ use reth::revm::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
-pub struct InputRaw {
-    pub context: MiniContext,
-    pub interpreter: Interpreter,
-}
+pub fn serialize_input(interpreter: &Interpreter, block: &BlockEnv, tx: &TxEnv) -> Vec<u8> {
+    let s_interpreter =
+        bincode::serde::encode_to_vec(interpreter, bincode::config::legacy()).unwrap();
+    let s_block = bincode::serde::encode_to_vec(block, bincode::config::legacy()).unwrap();
+    let s_tx = bincode::serde::encode_to_vec(tx, bincode::config::legacy()).unwrap();
 
-pub struct Input {
-    pub context: Context,
-    pub interpreter: Interpreter<EthInterpreter>,
-}
+    let si_len = s_interpreter.len();
+    let sb_len = s_block.len();
+    let st_len = s_tx.len();
 
-#[derive(Serialize, Deserialize)]
-pub struct OutputRaw {
-    context: MiniContext,
-    interpreter: Interpreter,
-    out: InterpreterAction,
-}
+    let mut serialized = Vec::with_capacity(si_len + sb_len + st_len + 24);
 
-pub struct Output {
-    pub context: Context,
-    pub interpreter: Interpreter,
-    pub out: InterpreterAction,
-}
+    serialized.extend((si_len as u64).to_le_bytes());
+    serialized.extend((sb_len as u64).to_le_bytes());
+    serialized.extend((st_len as u64).to_le_bytes());
 
-#[derive(Serialize, Deserialize)]
-pub struct MiniContext<
-    BLOCK = BlockEnv,
-    TX = TxEnv,
-    CFG = CfgEnv,
-    DB: Database = EmptyDB,
-    JOURNAL: JournalTr<Database = DB> = Journal<DB>,
-    CHAIN = (),
-> {
-    /// Block information.
-    pub block: BLOCK,
-    /// Transaction information.
-    pub tx: TX,
-    /// Configurations.
-    pub cfg: CFG,
-    /// EVM State with journaling support and database.
-    pub journaled_state: JOURNAL,
-    /// Inner context.
-    pub chain: CHAIN,
-    #[serde(skip, default = "default_result::<DB>")]
-    /// Error that happened during execution.
-    pub error: Result<(), ContextError<DB::Error>>,
-}
-
-fn default_result<DB: Database>() -> Result<(), ContextError<DB::Error>> {
-    Ok(())
-}
-
-pub fn serialize_input(
-    s_interpreter: &[u8],
-    context: &Context,
-) -> Vec<u8> {
-    let mini_context = MiniContext::from_context(context.clone());
-    let s_context = bincode::serde::encode_to_vec(&mini_context, bincode::config::legacy()).unwrap();
-    
-    println!("This is the mini context: {:?}", s_context);
-
-    let sc_len = s_context.len();
-    let mc_len = s_interpreter.len();
-
-    let mut serialized = Vec::with_capacity(sc_len + mc_len + 16);
-
-    serialized.extend((sc_len as u64).to_le_bytes());
-    serialized.extend((mc_len as u64).to_le_bytes());
-    serialized.extend(s_context);
     serialized.extend(s_interpreter);
+    serialized.extend(s_block);
+    serialized.extend(s_tx);
 
     serialized
 }
 
-pub fn deserialize_input(data: &[u8]) -> Result<(Vec<u8>, Context), Box<dyn std::error::Error>> {
+pub fn deserialize_input(data: &[u8]) -> (Interpreter, BlockEnv, TxEnv) {
     // Check minimum length for headers (16 bytes for two u64 lengths)
-    if data.len() < 16 {
-        return Err("Data too short for headers".into());
+    if data.len() < 24 {
+        panic!("Data too short for headers");
     }
 
     // Read the lengths from the first 16 bytes
-    let sc_len = u64::from_le_bytes(data[0..8].try_into()?) as usize;
-    let mc_len = u64::from_le_bytes(data[8..16].try_into()?) as usize;
+    let si_len = u64::from_le_bytes(data[0..8].try_into().unwrap()) as usize;
+    let sb_len = u64::from_le_bytes(data[8..16].try_into().unwrap()) as usize;
+    let st_len = u64::from_le_bytes(data[16..24].try_into().unwrap()) as usize;
 
     // Check total length
-    let expected_len = 16 + sc_len + mc_len;
+    let expected_len = si_len + sb_len + st_len + 24;
     if data.len() != expected_len {
-        return Err(format!(
+        panic!(
             "Data length mismatch: expected {}, got {}",
             expected_len,
             data.len()
-        )
-        .into());
+        );
     }
 
-    // Extract the context bytes and deserialize
-    let context_bytes = &data[16..16 + sc_len];
-    let mini_context: MiniContext = bincode::serde::decode_from_slice(context_bytes, bincode::config::legacy()).unwrap().0;
-    let context = Context::from(mini_context);
-
     // Extract the interpreter bytes
-    let interpreter_bytes = &data[16 + sc_len..16 + sc_len + mc_len];
+    let interpreter_bytes = &data[24..24 + si_len];
+    let interpreter: Interpreter =
+        bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy())
+            .unwrap()
+            .0;
 
-    Ok((interpreter_bytes.to_vec(), context))
+    // Extract the block bytes
+    let block_bytes = &data[24 + si_len..24 + si_len + sb_len];
+    let block: BlockEnv = bincode::serde::decode_from_slice(block_bytes, bincode::config::legacy())
+        .unwrap()
+        .0;
+
+    // Extract the transaction bytes
+    let tx_bytes = &data[24 + si_len + sb_len..24 + si_len + sb_len + st_len];
+    let tx: TxEnv = bincode::serde::decode_from_slice(tx_bytes, bincode::config::legacy())
+        .unwrap()
+        .0;
+
+    (interpreter, block, tx)
 }
 
 pub fn serialize_output(
-    s_interpreter: &[u8],
-    context: &Context,
+    interpreter: &Interpreter,
+    block: &BlockEnv,
+    tx: &TxEnv,
     out: &InterpreterAction,
 ) -> Vec<u8> {
-    let mini_context = MiniContext::from_context(context.clone());
-    let s_context = bincode::serde::encode_to_vec(&mini_context, bincode::config::legacy()).unwrap();
+    let s_interpreter =
+        bincode::serde::encode_to_vec(interpreter, bincode::config::legacy()).unwrap();
+    let s_block = bincode::serde::encode_to_vec(block, bincode::config::legacy()).unwrap();
+    let s_tx = bincode::serde::encode_to_vec(tx, bincode::config::legacy()).unwrap();
     let s_out = bincode::serde::encode_to_vec(out, bincode::config::legacy()).unwrap();
 
-    let sc_len = s_context.len();
-    let mc_len = s_interpreter.len();
-    let out_len = s_out.len();
+    let si_len = s_interpreter.len();
+    let sb_len = s_block.len();
+    let st_len = s_tx.len();
+    let so_len = s_out.len();
 
-    let mut serialized = Vec::with_capacity(sc_len + mc_len + out_len + 24);
+    let mut serialized = Vec::with_capacity(si_len + sb_len + st_len + so_len + 32);
 
-    serialized.extend((sc_len as u64).to_le_bytes());
-    serialized.extend((mc_len as u64).to_le_bytes());
-    serialized.extend((out_len as u64).to_le_bytes());
-    serialized.extend(s_context);
+    serialized.extend((si_len as u64).to_le_bytes());
+    serialized.extend((sb_len as u64).to_le_bytes());
+    serialized.extend((st_len as u64).to_le_bytes());
+    serialized.extend((so_len as u64).to_le_bytes());
+
     serialized.extend(s_interpreter);
+    serialized.extend(s_block);
+    serialized.extend(s_tx);
     serialized.extend(s_out);
 
     serialized
 }
 
-pub fn deserialize_output_bytes(
-    data: &[u8],
-) -> Result<(Vec<u8>, Context, InterpreterAction), Box<dyn std::error::Error>> {
-    // Check minimum length for headers (24 bytes for three u64 lengths)
-    if data.len() < 24 {
-        return Err("Data too short for headers".into());
+pub fn deserialize_output(serialized: &[u8]) -> (Interpreter, BlockEnv, TxEnv, InterpreterAction) {
+    // Check minimum length for headers (32 bytes for four u64 lengths)
+    if serialized.len() < 32 {
+        panic!("Data too short for headers");
     }
 
-    // Read the lengths from the first 24 bytes
-    let sc_len = u64::from_le_bytes(data[0..8].try_into()?) as usize;
-    let mc_len = u64::from_le_bytes(data[8..16].try_into()?) as usize;
-    let out_len = u64::from_le_bytes(data[16..24].try_into()?) as usize;
+    // Read the lengths from the first 32 bytes
+    let si_len = u64::from_le_bytes(serialized[0..8].try_into().unwrap()) as usize;
+    let sb_len = u64::from_le_bytes(serialized[8..16].try_into().unwrap()) as usize;
+    let st_len = u64::from_le_bytes(serialized[16..24].try_into().unwrap()) as usize;
+    let so_len = u64::from_le_bytes(serialized[24..32].try_into().unwrap()) as usize;
 
     // Check total length
-    let expected_len = 24 + sc_len + mc_len + out_len;
-    if data.len() != expected_len {
-        return Err(format!(
+    let expected_len = si_len + sb_len + st_len + so_len + 32;
+    if serialized.len() != expected_len {
+        panic!(
             "Data length mismatch: expected {}, got {}",
             expected_len,
-            data.len()
-        )
-        .into());
+            serialized.len()
+        );
     }
-
-    // Extract the context bytes and deserialize
-    let context_bytes = &data[24..24 + sc_len];
-    let mini_context: MiniContext = bincode::serde::decode_from_slice(context_bytes, bincode::config::legacy())?.0;
-    let context = Context::from(mini_context);
 
     // Extract the interpreter bytes
-    let interpreter_bytes = &data[24 + sc_len..24 + sc_len + mc_len];
+    let interpreter_bytes = &serialized[32..32 + si_len];
+    let interpreter: Interpreter =
+        bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy())
+            .unwrap()
+            .0;
 
-    // Extract the output bytes and deserialize
-    let out_bytes = &data[24 + sc_len + mc_len..24 + sc_len + mc_len + out_len];
-    let out: InterpreterAction = bincode::serde::decode_from_slice(out_bytes, bincode::config::legacy())?.0;
+    // Extract the block bytes
+    let block_bytes = &serialized[32 + si_len..32 + si_len + sb_len];
+    let block: BlockEnv = bincode::serde::decode_from_slice(block_bytes, bincode::config::legacy())
+        .unwrap()
+        .0;
 
-    Ok((interpreter_bytes.to_vec(), context, out))
-}
+    // Extract the transaction bytes
+    let tx_bytes = &serialized[32 + si_len + sb_len..32 + si_len + sb_len + st_len];
+    let tx: TxEnv = bincode::serde::decode_from_slice(tx_bytes, bincode::config::legacy())
+        .unwrap()
+        .0;
 
-pub fn deserialize_output(
-    data: &[u8],
-) -> Result<(Interpreter, Context, InterpreterAction), Box<dyn std::error::Error>> {
-    // Check minimum length for headers (24 bytes for three u64 lengths)
-    if data.len() < 24 {
-        return Err("Data too short for headers".into());
-    }
+    // Extract the output bytes
+    let out_bytes =
+        &serialized[32 + si_len + sb_len + st_len..32 + si_len + sb_len + st_len + so_len];
+    let out: InterpreterAction =
+        bincode::serde::decode_from_slice(out_bytes, bincode::config::legacy())
+            .unwrap()
+            .0;
 
-    // Read the lengths from the first 24 bytes
-    let sc_len = u64::from_le_bytes(data[0..8].try_into()?) as usize;
-    let mc_len = u64::from_le_bytes(data[8..16].try_into()?) as usize;
-    let out_len = u64::from_le_bytes(data[16..24].try_into()?) as usize;
-
-    // Check total length
-    let expected_len = 24 + sc_len + mc_len + out_len;
-    if data.len() != expected_len {
-        return Err(format!(
-            "Data length mismatch: expected {}, got {}",
-            expected_len,
-            data.len()
-        )
-        .into());
-    }
-
-    // Extract the context bytes and deserialize
-    let context_bytes = &data[24..24 + sc_len];
-    let mini_context: MiniContext = bincode::serde::decode_from_slice(context_bytes, bincode::config::legacy())?.0;
-    let context = Context::from(mini_context);
-
-    // Extract the interpreter bytes
-    let interpreter_bytes = &data[24 + sc_len..24 + sc_len + mc_len];
-
-    // Extract the output bytes and deserialize
-    let out_bytes = &data[24 + sc_len + mc_len..24 + sc_len + mc_len + out_len];
-    let out: InterpreterAction = bincode::serde::decode_from_slice(out_bytes, bincode::config::legacy())?.0;
-
-    let interpreter: Interpreter = bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy())?.0;
-
-    Ok((interpreter, context, out))
-}
-
-impl From<MiniContext> for Context {
-    fn from(mini_context: MiniContext) -> Self {
-        Self {
-            block: mini_context.block,
-            tx: mini_context.tx,
-            cfg: mini_context.cfg,
-            journaled_state: mini_context.journaled_state,
-            chain: mini_context.chain,
-            error: mini_context.error,
-        }
-    }
-}
-
-impl MiniContext {
-    pub fn from_context(context: Context) -> Self {
-        Self {
-            block: context.block,
-            tx: context.tx,
-            cfg: context.cfg,
-            journaled_state: context.journaled_state,
-            chain: context.chain,
-            error: context.error,
-        }
-    }
+    (interpreter, block, tx, out)
 }
 
 #[cfg(test)]
@@ -250,488 +163,208 @@ mod tests {
     use reth::{
         primitives::TxType,
         revm::{
-            context::{BlockEnv, CfgEnv, TxEnv},
-            db::EmptyDB,
-            interpreter::{instruction_table, Gas, InstructionResult, InterpreterResult},
-            primitives::{Address, Bytes, TxKind, B256, U256},
-            Journal,
+            context::{BlockEnv, CfgEnv, TxEnv}, db::EmptyDB, interpreter::{
+                instruction_table, Gas, InstructionResult, Interpreter, InterpreterAction,
+                InterpreterResult, Stack,
+            }, primitives::{Address, Bytes, TxKind, B256, U256}, state::Bytecode, Journal
         },
         rpc::types::AccessList,
     };
 
-    fn create_test_context() -> Context {
-        Context {
-            block: BlockEnv {
-                number: 100,
-                beneficiary: Address::from([1u8; 20]),
-                timestamp: 1234567890,
-                gas_limit: 8000000,
-                basefee: 1000000000,
-                difficulty: U256::from(12345),
-                prevrandao: Some(B256::from([2u8; 32])),
-                blob_excess_gas_and_price: None,
-            },
-            tx: TxEnv {
-                caller: Address::from([3u8; 20]),
-                gas_limit: 21000,
-                gas_price: 20000000000,
-                value: U256::from(1000000000000000000u64), // 1 ETH
-                data: reth::revm::primitives::Bytes::from(vec![0x60, 0x80, 0x60, 0x40]),
-                nonce: 42,
-                chain_id: Some(1),
-                access_list: AccessList::default(),
-                gas_priority_fee: None,
-                blob_hashes: Vec::new(),
-                max_fee_per_blob_gas: 100,
-                authorization_list: Vec::new(),
-                tx_type: TxType::Legacy as u8,
-                kind: TxKind::Create,
-            },
-            cfg: CfgEnv::new(),
-            journaled_state: Journal::new(EmptyDB::default()),
-            chain: (),
-            error: Ok(()),
+    fn create_test_block() -> BlockEnv {
+        BlockEnv {
+            number: 100,
+            beneficiary: Address::from([1u8; 20]),
+            timestamp: 1234567890,
+            gas_limit: 8000000,
+            basefee: 1000000000,
+            difficulty: U256::from(12345),
+            prevrandao: Some(B256::from([2u8; 32])),
+            blob_excess_gas_and_price: None,
         }
     }
 
-    fn create_test_interpreter_bytes() -> Vec<u8> {
-        // Mock interpreter bytes - in real usage this would be properly serialized interpreter data
-        vec![
-            123, 34, 98, 121, 116, 101, 99, 111, 100, 101, 34, 58, 123, 34, 98, 97, 115, 101, 34,
-            58, 123, 34, 76, 101, 103, 97, 99, 121, 65, 110, 97, 108, 121, 122, 101, 100, 34, 58,
-            123, 34, 98, 121, 116, 101, 99, 111, 100, 101, 34, 58, 34, 48, 120, 54, 48, 56, 48, 56,
-            48, 54, 48, 52, 48, 53, 50, 51, 52, 54, 48, 49, 51, 53, 55, 54, 48, 100, 102, 57, 48,
-            56, 49, 54, 48, 49, 57, 56, 50, 51, 57, 102, 51, 53, 98, 54, 48, 48, 48, 56, 48, 102,
-            100, 102, 101, 54, 48, 56, 48, 56, 48, 54, 48, 52, 48, 53, 50, 54, 48, 48, 52, 51, 54,
-            49, 48, 49, 53, 54, 48, 49, 50, 53, 55, 54, 48, 48, 48, 56, 48, 102, 100, 53, 98, 54,
-            48, 48, 48, 51, 53, 54, 48, 101, 48, 49, 99, 57, 48, 56, 49, 54, 51, 51, 102, 98, 53,
-            99, 49, 99, 98, 49, 52, 54, 48, 57, 50, 53, 55, 56, 49, 54, 51, 56, 51, 56, 49, 102,
-            53, 56, 97, 49, 52, 54, 48, 55, 57, 53, 55, 53, 48, 54, 51, 100, 48, 57, 100, 101, 48,
-            56, 97, 49, 52, 54, 48, 51, 99, 53, 55, 54, 48, 48, 48, 56, 48, 102, 100, 53, 98, 51,
-            52, 54, 48, 55, 52, 53, 55, 54, 48, 48, 48, 51, 54, 54, 48, 48, 51, 49, 57, 48, 49, 49,
-            50, 54, 48, 55, 52, 53, 55, 54, 48, 48, 48, 53, 52, 54, 48, 48, 48, 49, 57, 56, 49, 49,
-            52, 54, 48, 53, 101, 53, 55, 54, 48, 48, 49, 48, 49, 54, 48, 48, 48, 53, 53, 48, 48,
-            53, 98, 54, 51, 52, 101, 52, 56, 55, 98, 55, 49, 54, 48, 101, 48, 49, 98, 54, 48, 48,
-            48, 53, 50, 54, 48, 49, 49, 54, 48, 48, 52, 53, 50, 54, 48, 50, 52, 54, 48, 48, 48,
-            102, 100, 53, 98, 54, 48, 48, 48, 56, 48, 102, 100, 53, 98, 51, 52, 54, 48, 55, 52, 53,
-            55, 54, 48, 48, 48, 51, 54, 54, 48, 48, 51, 49, 57, 48, 49, 49, 50, 54, 48, 55, 52, 53,
-            55, 54, 48, 50, 48, 57, 48, 54, 48, 48, 48, 53, 52, 56, 49, 53, 50, 102, 51, 53, 98,
-            51, 52, 54, 48, 55, 52, 53, 55, 54, 48, 50, 48, 51, 54, 54, 48, 48, 51, 49, 57, 48, 49,
-            49, 50, 54, 48, 55, 52, 53, 55, 54, 48, 48, 52, 51, 53, 54, 48, 48, 48, 53, 53, 48, 48,
-            102, 101, 97, 50, 54, 52, 54, 57, 55, 48, 54, 54, 55, 51, 53, 56, 50, 50, 49, 50, 50,
-            48, 101, 57, 55, 56, 50, 55, 48, 56, 56, 51, 98, 55, 98, 97, 101, 100, 49, 48, 56, 49,
-            48, 99, 52, 48, 55, 57, 99, 57, 52, 49, 53, 49, 50, 101, 57, 51, 97, 55, 98, 97, 49,
-            99, 100, 49, 49, 48, 56, 99, 55, 56, 49, 100, 52, 98, 99, 55, 51, 56, 100, 57, 48, 57,
-            48, 53, 54, 52, 55, 51, 54, 102, 54, 99, 54, 51, 52, 51, 48, 48, 48, 56, 49, 97, 48,
-            48, 51, 51, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-            48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-            48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-            48, 48, 48, 34, 44, 34, 111, 114, 105, 103, 105, 110, 97, 108, 95, 108, 101, 110, 34,
-            58, 50, 52, 56, 44, 34, 106, 117, 109, 112, 95, 116, 97, 98, 108, 101, 34, 58, 123, 34,
-            111, 114, 100, 101, 114, 34, 58, 34, 98, 105, 116, 118, 101, 99, 58, 58, 111, 114, 100,
-            101, 114, 58, 58, 76, 115, 98, 48, 34, 44, 34, 104, 101, 97, 100, 34, 58, 123, 34, 119,
-            105, 100, 116, 104, 34, 58, 56, 44, 34, 105, 110, 100, 101, 120, 34, 58, 48, 125, 44,
-            34, 98, 105, 116, 115, 34, 58, 50, 56, 49, 44, 34, 100, 97, 116, 97, 34, 58, 91, 48,
-            44, 48, 44, 56, 44, 48, 44, 48, 44, 56, 44, 48, 44, 48, 44, 48, 44, 48, 44, 51, 50, 44,
-            48, 44, 48, 44, 48, 44, 49, 50, 56, 44, 48, 44, 48, 44, 51, 50, 44, 52, 44, 48, 44, 48,
-            44, 56, 44, 48, 44, 48, 44, 48, 44, 48, 44, 48, 44, 48, 44, 48, 44, 48, 44, 48, 44, 48,
-            44, 48, 44, 48, 44, 48, 44, 48, 93, 125, 125, 125, 44, 34, 112, 114, 111, 103, 114, 97,
-            109, 95, 99, 111, 117, 110, 116, 101, 114, 34, 58, 48, 44, 34, 98, 121, 116, 101, 99,
-            111, 100, 101, 95, 104, 97, 115, 104, 34, 58, 34, 48, 120, 48, 48, 48, 48, 48, 48, 48,
-            48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-            48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48,
-            48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 48, 34, 125, 44, 34, 115, 116, 97, 99,
-            107, 34, 58, 123, 34, 100, 97, 116, 97, 34, 58, 91, 93, 125, 44, 34, 114, 101, 116,
-            117, 114, 110, 95, 100, 97, 116, 97, 34, 58, 34, 48, 120, 34, 44, 34, 109, 101, 109,
-            111, 114, 121, 34, 58, 123, 34, 98, 117, 102, 102, 101, 114, 34, 58, 91, 93, 44, 34,
-            99, 104, 101, 99, 107, 112, 111, 105, 110, 116, 115, 34, 58, 91, 48, 93, 44, 34, 108,
-            97, 115, 116, 95, 99, 104, 101, 99, 107, 112, 111, 105, 110, 116, 34, 58, 48, 125, 44,
-            34, 105, 110, 112, 117, 116, 34, 58, 123, 34, 116, 97, 114, 103, 101, 116, 95, 97, 100,
-            100, 114, 101, 115, 115, 34, 58, 34, 48, 120, 53, 102, 98, 100, 98, 50, 51, 49, 53, 54,
-            55, 56, 97, 102, 101, 99, 98, 51, 54, 55, 102, 48, 51, 50, 100, 57, 51, 102, 54, 52,
-            50, 102, 54, 52, 49, 56, 48, 97, 97, 51, 34, 44, 34, 99, 97, 108, 108, 101, 114, 95,
-            97, 100, 100, 114, 101, 115, 115, 34, 58, 34, 48, 120, 102, 51, 57, 102, 100, 54, 101,
-            53, 49, 97, 97, 100, 56, 56, 102, 54, 102, 52, 99, 101, 54, 97, 98, 56, 56, 50, 55, 50,
-            55, 57, 99, 102, 102, 102, 98, 57, 50, 50, 54, 54, 34, 44, 34, 105, 110, 112, 117, 116,
-            34, 58, 34, 48, 120, 34, 44, 34, 99, 97, 108, 108, 95, 118, 97, 108, 117, 101, 34, 58,
-            34, 48, 120, 48, 34, 125, 44, 34, 115, 117, 98, 95, 114, 111, 117, 116, 105, 110, 101,
-            34, 58, 123, 34, 114, 101, 116, 117, 114, 110, 95, 115, 116, 97, 99, 107, 34, 58, 91,
-            93, 44, 34, 99, 117, 114, 114, 101, 110, 116, 95, 99, 111, 100, 101, 95, 105, 100, 120,
-            34, 58, 48, 125, 44, 34, 99, 111, 110, 116, 114, 111, 108, 34, 58, 123, 34, 105, 110,
-            115, 116, 114, 117, 99, 116, 105, 111, 110, 95, 114, 101, 115, 117, 108, 116, 34, 58,
-            34, 67, 111, 110, 116, 105, 110, 117, 101, 34, 44, 34, 110, 101, 120, 116, 95, 97, 99,
-            116, 105, 111, 110, 34, 58, 34, 78, 111, 110, 101, 34, 44, 34, 103, 97, 115, 34, 58,
-            123, 34, 108, 105, 109, 105, 116, 34, 58, 54, 56, 53, 52, 55, 57, 53, 50, 57, 50, 50,
-            48, 49, 48, 49, 55, 54, 44, 34, 114, 101, 109, 97, 105, 110, 105, 110, 103, 34, 58, 54,
-            56, 53, 52, 55, 57, 53, 50, 57, 50, 50, 48, 49, 48, 49, 55, 54, 44, 34, 114, 101, 102,
-            117, 110, 100, 101, 100, 34, 58, 48, 44, 34, 109, 101, 109, 111, 114, 121, 34, 58, 123,
-            34, 119, 111, 114, 100, 115, 95, 110, 117, 109, 34, 58, 48, 44, 34, 101, 120, 112, 97,
-            110, 115, 105, 111, 110, 95, 99, 111, 115, 116, 34, 58, 48, 125, 125, 125, 44, 34, 114,
-            117, 110, 116, 105, 109, 101, 95, 102, 108, 97, 103, 34, 58, 123, 34, 105, 115, 95,
-            115, 116, 97, 116, 105, 99, 34, 58, 102, 97, 108, 115, 101, 44, 34, 105, 115, 95, 101,
-            111, 102, 95, 105, 110, 105, 116, 34, 58, 102, 97, 108, 115, 101, 44, 34, 105, 115, 95,
-            101, 111, 102, 34, 58, 102, 97, 108, 115, 101, 44, 34, 115, 112, 101, 99, 95, 105, 100,
-            34, 58, 34, 80, 82, 65, 71, 85, 69, 34, 125, 44, 34, 101, 120, 116, 101, 110, 100, 34,
-            58, 110, 117, 108, 108, 125,
-        ]
+    fn create_test_tx() -> TxEnv {
+        TxEnv {
+            caller: Address::from([3u8; 20]),
+            gas_limit: 21000,
+            gas_price: 20000000000,
+            value: U256::from(1000000000000000000u64), // 1 ETH
+            data: reth::revm::primitives::Bytes::from(vec![0x60, 0x80, 0x60, 0x40]),
+            nonce: 42,
+            chain_id: Some(1),
+            access_list: AccessList::default(),
+            gas_priority_fee: None,
+            blob_hashes: Vec::new(),
+            max_fee_per_blob_gas: 100,
+            authorization_list: Vec::new(),
+            tx_type: TxType::Legacy as u8,
+            kind: TxKind::Create,
+        }
+    }
+
+    fn create_test_interpreter() -> Interpreter {
+        let bytecode = Bytecode::new_raw(Bytes::from(vec![0x60, 0x80, 0x60, 0x40]));
+        let mut interpreter = Interpreter::default();
+        interpreter = interpreter.with_bytecode(bytecode);
+        interpreter
     }
 
     fn create_test_interpreter_action() -> InterpreterAction {
         InterpreterAction::Return {
             result: InterpreterResult {
                 result: InstructionResult::Return,
-                output: Bytes::from(vec![0xa1, 0xa2, 0xa3, 0xa4]),
+                output: Bytes::from(vec![0x1, 0x2, 0x3, 0x4]),
                 gas: Gas::new(21000),
             },
         }
     }
 
     #[test]
-    fn test_mini_context_from_context() {
-        let context = create_test_context();
-        let mini_context = MiniContext::from_context(context.clone());
-
-        assert_eq!(mini_context.block.number, context.block.number);
-        assert_eq!(mini_context.tx.caller, context.tx.caller);
-        assert_eq!(mini_context.cfg.chain_id, context.cfg.chain_id);
-        assert_eq!(mini_context.chain, context.chain);
-    }
-
-    #[test]
-    fn test_context_from_mini_context() {
-        let original_context = create_test_context();
-        let mini_context = MiniContext::from_context(original_context.clone());
-        let restored_context = Context::from(mini_context);
-
-        assert_eq!(restored_context.block.number, original_context.block.number);
-        assert_eq!(restored_context.tx.caller, original_context.tx.caller);
-        assert_eq!(restored_context.cfg.chain_id, original_context.cfg.chain_id);
-        assert_eq!(restored_context.chain, original_context.chain);
-    }
-
-    #[test]
-    fn test_serialize_input() {
-        let context = create_test_context();
-        let interpreter_bytes = create_test_interpreter_bytes();
-
-        let serialized = serialize_input(&interpreter_bytes, &context);
-
-        // Check that we have at least the headers (16 bytes)
-        assert!(serialized.len() >= 16);
-
-        // Check that the lengths are correctly encoded
-        let sc_len = u64::from_le_bytes(serialized[0..8].try_into().unwrap()) as usize;
-        let mc_len = u64::from_le_bytes(serialized[8..16].try_into().unwrap()) as usize;
-
-        assert_eq!(mc_len, interpreter_bytes.len());
-        assert_eq!(serialized.len(), 16 + sc_len + mc_len);
-    }
-
-    #[test]
-    fn test_deserialize_input() {
-        let context = create_test_context();
-        let interpreter_bytes = create_test_interpreter_bytes();
-
-        // First serialize
-        let serialized = serialize_input(&interpreter_bytes, &context);
-
-        // Then deserialize
-        let result = deserialize_input(&serialized);
-        assert!(result.is_ok());
-
-        let (deserialized_interpreter, deserialized_context) = result.unwrap();
-
-        // Check interpreter bytes
-        assert_eq!(deserialized_interpreter, interpreter_bytes);
-
-        // Check context fields
-        assert_eq!(deserialized_context.block.number, context.block.number);
-        assert_eq!(deserialized_context.tx.caller, context.tx.caller);
-        assert_eq!(deserialized_context.cfg.chain_id, context.cfg.chain_id);
-    }
-
-    #[test]
-    fn test_round_trip_serialization() {
-        let original_context = create_test_context();
-        let original_interpreter_bytes = create_test_interpreter_bytes();
+    fn test_input_round_trip() {
+        // Create test data
+        let interpreter = create_test_interpreter();
+        let block = create_test_block();
+        let tx = create_test_tx();
 
         // Serialize
-        let serialized = serialize_input(&original_interpreter_bytes, &original_context);
+        let serialized = serialize_input(&interpreter, &block, &tx);
 
         // Deserialize
-        let (restored_interpreter_bytes, restored_context) =
-            deserialize_input(&serialized).expect("Deserialization should succeed");
+        let (deserialized_interpreter, deserialized_block, deserialized_tx) =
+            deserialize_input(&serialized);
 
-        // Verify interpreter bytes are identical
-        assert_eq!(restored_interpreter_bytes, original_interpreter_bytes);
+        // Compare interpreter bytecode (since Interpreter doesn't implement PartialEq)
+        assert_eq!(interpreter.bytecode.bytecode(), deserialized_interpreter.bytecode.bytecode());
 
-        // Verify context fields are identical
-        assert_eq!(restored_context.block.number, original_context.block.number);
-        assert_eq!(
-            restored_context.block.timestamp,
-            original_context.block.timestamp
-        );
-        assert_eq!(
-            restored_context.block.gas_limit,
-            original_context.block.gas_limit
-        );
-        assert_eq!(
-            restored_context.block.basefee,
-            original_context.block.basefee
-        );
+        // Compare block
+        assert_eq!(block.number, deserialized_block.number);
+        assert_eq!(block.beneficiary, deserialized_block.beneficiary);
+        assert_eq!(block.timestamp, deserialized_block.timestamp);
+        assert_eq!(block.gas_limit, deserialized_block.gas_limit);
+        assert_eq!(block.basefee, deserialized_block.basefee);
+        assert_eq!(block.difficulty, deserialized_block.difficulty);
+        assert_eq!(block.prevrandao, deserialized_block.prevrandao);
 
-        assert_eq!(restored_context.tx.caller, original_context.tx.caller);
-        assert_eq!(restored_context.tx.gas_limit, original_context.tx.gas_limit);
-        assert_eq!(restored_context.tx.gas_price, original_context.tx.gas_price);
-        assert_eq!(restored_context.tx.value, original_context.tx.value);
-        assert_eq!(restored_context.tx.data, original_context.tx.data);
-        assert_eq!(restored_context.tx.nonce, original_context.tx.nonce);
-
-        assert_eq!(restored_context.cfg.chain_id, original_context.cfg.chain_id);
-
-        assert_eq!(restored_context.chain, original_context.chain);
+        // Compare transaction
+        assert_eq!(tx.caller, deserialized_tx.caller);
+        assert_eq!(tx.gas_limit, deserialized_tx.gas_limit);
+        assert_eq!(tx.gas_price, deserialized_tx.gas_price);
+        assert_eq!(tx.value, deserialized_tx.value);
+        assert_eq!(tx.data, deserialized_tx.data);
+        assert_eq!(tx.nonce, deserialized_tx.nonce);
+        assert_eq!(tx.chain_id, deserialized_tx.chain_id);
+        assert_eq!(tx.kind, deserialized_tx.kind);
     }
 
     #[test]
-    fn test_deserialize_invalid_data() {
-        // Test with data too short for headers
-        let short_data = vec![0x01, 0x02, 0x03];
-        let result = deserialize_input(&short_data);
-        
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Data length mismatch"));
-
-        // Test with invalid length
-        let mut invalid_data = vec![0u8; 16];
-        // Set context length to 100 but don't provide enough data
-        invalid_data[0..8].copy_from_slice(&(100u64).to_le_bytes());
-        invalid_data[8..16].copy_from_slice(&(50u64).to_le_bytes());
-
-        let result = deserialize_input(&invalid_data);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Data length mismatch"));
-    }
-
-    #[test]
-    fn test_empty_interpreter_bytes() {
-        let context = create_test_context();
-        let empty_interpreter_bytes = Vec::new();
-
-        let serialized = serialize_input(&empty_interpreter_bytes, &context);
-        let (restored_interpreter_bytes, restored_context) =
-            deserialize_input(&serialized).unwrap();
-
-        assert_eq!(restored_interpreter_bytes, empty_interpreter_bytes);
-        assert_eq!(restored_context.block.number, context.block.number);
-    }
-
-    #[test]
-    fn test_large_interpreter_bytes() {
-        let context = create_test_context();
-        let large_interpreter_bytes = vec![0x42; 10000]; // 10KB of data
-
-        let serialized = serialize_input(&large_interpreter_bytes, &context);
-        let (restored_interpreter_bytes, restored_context) =
-            deserialize_input(&serialized).unwrap();
-
-        assert_eq!(restored_interpreter_bytes, large_interpreter_bytes);
-        assert_eq!(restored_context.tx.caller, context.tx.caller);
-    }
-
-    #[test]
-    fn test_serialize_output() {
-        let context = super::tests::create_test_context();
-        let interpreter_bytes = super::tests::create_test_interpreter_bytes();
-        let out = create_test_interpreter_action();
-
-        let serialized = serialize_output(&interpreter_bytes, &context, &out);
-
-        // Check that we have at least the headers (24 bytes)
-        assert!(serialized.len() >= 24);
-
-        // Check that the lengths are correctly encoded
-        let sc_len = u64::from_le_bytes(serialized[0..8].try_into().unwrap()) as usize;
-        let mc_len = u64::from_le_bytes(serialized[8..16].try_into().unwrap()) as usize;
-        let out_len = u64::from_le_bytes(serialized[16..24].try_into().unwrap()) as usize;
-
-        assert_eq!(mc_len, interpreter_bytes.len());
-        assert_eq!(serialized.len(), 24 + sc_len + mc_len + out_len);
-    }
-
-    #[test]
-    fn test_deserialize_output() {
-        let context = super::tests::create_test_context();
-        let interpreter_bytes = super::tests::create_test_interpreter_bytes();
-        let out = create_test_interpreter_action();
-
-        // First serialize
-        let serialized = serialize_output(&interpreter_bytes, &context, &out);
-
-        // Then deserialize
-        let result = deserialize_output_bytes(&serialized);
-        assert!(result.is_ok());
-
-        let (deserialized_interpreter, deserialized_context, deserialized_out) = result.unwrap();
-
-        // Check interpreter bytes
-        assert_eq!(deserialized_interpreter, interpreter_bytes);
-
-        // Check context fields
-        assert_eq!(deserialized_context.block.number, context.block.number);
-        assert_eq!(deserialized_context.tx.caller, context.tx.caller);
-
-        // Check output action
-        match (&out, &deserialized_out) {
-            (
-                InterpreterAction::Return { result: orig },
-                InterpreterAction::Return { result: deser },
-            ) => {
-                assert_eq!(orig.result, deser.result);
-                assert_eq!(orig.output, deser.output);
-                assert_eq!(orig.gas.limit(), deser.gas.limit());
-            }
-            _ => panic!("Output action type mismatch"),
-        }
-    }
-
-    #[test]
-    fn test_output_round_trip_return_action() {
-        let original_context = super::tests::create_test_context();
-        let original_interpreter_bytes = super::tests::create_test_interpreter_bytes();
-        let original_out = create_test_interpreter_action();
+    fn test_output_round_trip() {
+        // Create test data
+        let interpreter = create_test_interpreter();
+        let block = create_test_block();
+        let tx = create_test_tx();
+        let action = create_test_interpreter_action();
 
         // Serialize
-        let serialized = serialize_output(
-            &original_interpreter_bytes,
-            &original_context,
-            &original_out,
-        );
+        let serialized = serialize_output(&interpreter, &block, &tx, &action);
 
         // Deserialize
-        let (restored_interpreter_bytes, restored_context, restored_out) =
-            deserialize_output_bytes(&serialized).expect("Deserialization should succeed");
+        let (deserialized_interpreter, deserialized_block, deserialized_tx, deserialized_action) =
+            deserialize_output(&serialized);
 
-        // Verify interpreter bytes are identical
-        assert_eq!(restored_interpreter_bytes, original_interpreter_bytes);
+        // Compare interpreter bytecode
+        assert_eq!(interpreter.bytecode.bytecode(), deserialized_interpreter.bytecode.bytecode());
 
-        // Verify context fields are identical
-        assert_eq!(restored_context.block.number, original_context.block.number);
-        assert_eq!(restored_context.tx.caller, original_context.tx.caller);
-        assert_eq!(restored_context.cfg.chain_id, original_context.cfg.chain_id);
+        // Compare block
+        assert_eq!(block.number, deserialized_block.number);
+        assert_eq!(block.beneficiary, deserialized_block.beneficiary);
+        assert_eq!(block.timestamp, deserialized_block.timestamp);
+        assert_eq!(block.gas_limit, deserialized_block.gas_limit);
+        assert_eq!(block.basefee, deserialized_block.basefee);
+        assert_eq!(block.difficulty, deserialized_block.difficulty);
+        assert_eq!(block.prevrandao, deserialized_block.prevrandao);
 
-        // Verify output action is identical
-        match (&original_out, &restored_out) {
+        // Compare transaction
+        assert_eq!(tx.caller, deserialized_tx.caller);
+        assert_eq!(tx.gas_limit, deserialized_tx.gas_limit);
+        assert_eq!(tx.gas_price, deserialized_tx.gas_price);
+        assert_eq!(tx.value, deserialized_tx.value);
+        assert_eq!(tx.data, deserialized_tx.data);
+        assert_eq!(tx.nonce, deserialized_tx.nonce);
+        assert_eq!(tx.chain_id, deserialized_tx.chain_id);
+        assert_eq!(tx.kind, deserialized_tx.kind);
+
+        // Compare action (match on the discriminant)
+        match (&action, &deserialized_action) {
             (
-                InterpreterAction::Return { result: orig },
-                InterpreterAction::Return { result: restored },
+                InterpreterAction::Return { result: r1 },
+                InterpreterAction::Return { result: r2 },
             ) => {
-                assert_eq!(orig.result, restored.result);
-                assert_eq!(orig.output, restored.output);
-                assert_eq!(orig.gas.limit(), restored.gas.limit());
-                assert_eq!(orig.gas.spent(), restored.gas.spent());
+                assert_eq!(r1.result, r2.result);
+                assert_eq!(r1.output, r2.output);
+                assert_eq!(r1.gas.limit(), r2.gas.limit());
             }
-            _ => panic!("Output action type mismatch"),
+            _ => panic!("Action types don't match"),
         }
     }
 
     #[test]
-    fn test_deserialize_output_invalid_data() {
-        // Test with data too short for headers
-        let short_data = vec![0x01, 0x02, 0x03];
-        let result = deserialize_output_bytes(&short_data);
+    fn test_input_serialization_error_handling() {
+        // Test with data too short
+        let short_data = vec![1, 2, 3];
+        let result = std::panic::catch_unwind(|| {
+            deserialize_input(&short_data);
+        });
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Data too short"));
 
-        // Test with invalid length
-        let mut invalid_data = vec![0u8; 24];
-        // Set lengths that don't match actual data
-        invalid_data[0..8].copy_from_slice(&(100u64).to_le_bytes());
-        invalid_data[8..16].copy_from_slice(&(50u64).to_le_bytes());
-        invalid_data[16..24].copy_from_slice(&(25u64).to_le_bytes());
-
-        let result = deserialize_output_bytes(&invalid_data);
+        // Test with incorrect length
+        let mut incorrect_data = vec![0u8; 32]; // Headers claiming certain lengths
+        incorrect_data[0] = 100; // Claim 100 bytes for interpreter
+        let result = std::panic::catch_unwind(|| {
+            deserialize_input(&incorrect_data);
+        });
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Data length mismatch"));
     }
 
     #[test]
-    fn test_output_with_empty_interpreter_bytes() {
-        let context = super::tests::create_test_context();
-        let empty_interpreter_bytes = Vec::new();
-        let out = create_test_interpreter_action();
+    fn test_output_serialization_error_handling() {
+        // Test with data too short
+        let short_data = vec![1, 2, 3];
+        let result = std::panic::catch_unwind(|| {
+            deserialize_output(&short_data);
+        });
+        assert!(result.is_err());
 
-        let serialized = serialize_output(&empty_interpreter_bytes, &context, &out);
-        let (restored_interpreter_bytes, restored_context, restored_out) =
-            deserialize_output_bytes(&serialized).unwrap();
-
-        assert_eq!(restored_interpreter_bytes, empty_interpreter_bytes);
-        assert_eq!(restored_context.block.number, context.block.number);
-
-        // Verify the output action was preserved
-        match (&out, &restored_out) {
-            (
-                InterpreterAction::Return { result: orig },
-                InterpreterAction::Return { result: restored },
-            ) => {
-                assert_eq!(orig.result, restored.result);
-            }
-            _ => panic!("Output action type mismatch"),
-        }
+        // Test with incorrect length
+        let mut incorrect_data = vec![0u8; 40]; // Headers claiming certain lengths
+        incorrect_data[0] = 100; // Claim 100 bytes for interpreter
+        let result = std::panic::catch_unwind(|| {
+            deserialize_output(&incorrect_data);
+        });
+        assert!(result.is_err());
     }
 
-    #[test]
-    fn test_output_serialization_format() {
-        let context = super::tests::create_test_context();
-        let interpreter_bytes = vec![0x11, 0x22, 0x33];
-        let out = create_test_interpreter_action();
+    // #[test]
+    // fn test_interaglly() {
+    //     let serial_input: &[u8] = &[195, 2, 0, 0, 0, 0, 0, 0, 142, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 243, 0, 192, 112, 39, 52, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 154, 128, 77, 211, 231, 224, 24, 151, 92, 16, 128, 79, 29, 191, 60, 164, 211, 181, 169, 42, 69, 88, 244, 226, 128, 172, 36, 155, 215, 149, 147, 93, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 136, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 98, 105, 116, 118, 101, 99, 58, 58, 111, 114, 100, 101, 114, 58, 58, 76, 115, 98, 48, 8, 0, 25, 1, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0, 0, 32, 0, 0, 0, 128, 0, 0, 32, 4, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 95, 189, 178, 49, 86, 120, 175, 236, 179, 103, 240, 50, 217, 63, 100, 47, 100, 24, 10, 163, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 64, 34, 255, 255, 255, 135, 243, 0, 64, 34, 255, 255, 255, 135, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0];
 
-        let serialized = serialize_output(&interpreter_bytes, &context, &out);
+    //     let raw_interpreter: &[u8] = &[0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 98, 105, 116, 118, 101, 99, 58, 58, 111, 114, 100, 101, 114, 58, 58, 76, 115, 98, 48, 8, 0, 25, 1, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0, 0, 32, 0, 0, 0, 128, 0, 0, 32, 4, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 95, 189, 178, 49, 86, 120, 175, 236, 179, 103, 240, 50, 217, 63, 100, 47, 100, 24, 10, 163, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 64, 34, 255, 255, 255, 135, 243, 0, 64, 34, 255, 255, 255, 135, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0];
 
-        // Verify the format: 24 bytes header + context + interpreter + output
-        let sc_len = u64::from_le_bytes(serialized[0..8].try_into().unwrap()) as usize;
-        let mc_len = u64::from_le_bytes(serialized[8..16].try_into().unwrap()) as usize;
-        let out_len = u64::from_le_bytes(serialized[16..24].try_into().unwrap()) as usize;
+    //     let input = deserialize_input(serial_input).unwrap();
 
-        assert_eq!(mc_len, 3); // Our test interpreter bytes length
-        assert!(sc_len > 0); // Context should have some length
-        assert!(out_len > 0); // Output should have some length
-        assert_eq!(serialized.len(), 24 + sc_len + mc_len + out_len);
+    //     assert_eq!(raw_interpreter, input.0);
 
-        // Verify we can extract the interpreter bytes from the right position
-        let extracted_interpreter = &serialized[24 + sc_len..24 + sc_len + mc_len];
-        assert_eq!(extracted_interpreter, &interpreter_bytes);
-    }
+    //     let mut context = input.1;
+    //     let mut interpreter: Interpreter = bincode::serde::decode_from_slice(&input.0, bincode::config::legacy()).unwrap().0;
 
-    #[test]
-    fn test_interaglly() {
-        let serial_input: &[u8] = &[195, 2, 0, 0, 0, 0, 0, 0, 142, 2, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 136, 243, 0, 192, 112, 39, 52, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 154, 128, 77, 211, 231, 224, 24, 151, 92, 16, 128, 79, 29, 191, 60, 164, 211, 181, 169, 42, 69, 88, 244, 226, 128, 172, 36, 155, 215, 149, 147, 93, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 136, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 17, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 98, 105, 116, 118, 101, 99, 58, 58, 111, 114, 100, 101, 114, 58, 58, 76, 115, 98, 48, 8, 0, 25, 1, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0, 0, 32, 0, 0, 0, 128, 0, 0, 32, 4, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 95, 189, 178, 49, 86, 120, 175, 236, 179, 103, 240, 50, 217, 63, 100, 47, 100, 24, 10, 163, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 64, 34, 255, 255, 255, 135, 243, 0, 64, 34, 255, 255, 255, 135, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0];
+    //     let out = interpreter.run_plain(&instruction_table(), &mut context);
 
-        let raw_interpreter: &[u8] = &[0, 0, 0, 0, 25, 1, 0, 0, 0, 0, 0, 0, 96, 128, 128, 96, 64, 82, 52, 96, 19, 87, 96, 223, 144, 129, 96, 25, 130, 57, 243, 91, 96, 0, 128, 253, 254, 96, 128, 128, 96, 64, 82, 96, 4, 54, 16, 21, 96, 18, 87, 96, 0, 128, 253, 91, 96, 0, 53, 96, 224, 28, 144, 129, 99, 63, 181, 193, 203, 20, 96, 146, 87, 129, 99, 131, 129, 245, 138, 20, 96, 121, 87, 80, 99, 208, 157, 224, 138, 20, 96, 60, 87, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 0, 84, 96, 0, 25, 129, 20, 96, 94, 87, 96, 1, 1, 96, 0, 85, 0, 91, 99, 78, 72, 123, 113, 96, 224, 27, 96, 0, 82, 96, 17, 96, 4, 82, 96, 36, 96, 0, 253, 91, 96, 0, 128, 253, 91, 52, 96, 116, 87, 96, 0, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 32, 144, 96, 0, 84, 129, 82, 243, 91, 52, 96, 116, 87, 96, 32, 54, 96, 3, 25, 1, 18, 96, 116, 87, 96, 4, 53, 96, 0, 85, 0, 254, 162, 100, 105, 112, 102, 115, 88, 34, 18, 32, 233, 120, 39, 8, 131, 183, 186, 237, 16, 129, 12, 64, 121, 201, 65, 81, 46, 147, 167, 186, 28, 209, 16, 140, 120, 29, 75, 199, 56, 217, 9, 5, 100, 115, 111, 108, 99, 67, 0, 8, 26, 0, 51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 248, 0, 0, 0, 0, 0, 0, 0, 19, 0, 0, 0, 0, 0, 0, 0, 98, 105, 116, 118, 101, 99, 58, 58, 111, 114, 100, 101, 114, 58, 58, 76, 115, 98, 48, 8, 0, 25, 1, 0, 0, 0, 0, 0, 0, 36, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 8, 0, 0, 0, 0, 32, 0, 0, 0, 128, 0, 0, 32, 4, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 95, 189, 178, 49, 86, 120, 175, 236, 179, 103, 240, 50, 217, 63, 100, 47, 100, 24, 10, 163, 20, 0, 0, 0, 0, 0, 0, 0, 243, 159, 214, 229, 26, 173, 136, 246, 244, 206, 106, 184, 130, 114, 121, 207, 255, 185, 34, 102, 0, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 64, 34, 255, 255, 255, 135, 243, 0, 64, 34, 255, 255, 255, 135, 243, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18, 0, 0, 0];
+    //     let output = Output {
+    //         context,
+    //         interpreter,
+    //         out,
+    //     };
 
-        let input = deserialize_input(serial_input).unwrap();
-
-        assert_eq!(raw_interpreter, input.0);
-
-        let mut context = input.1;
-        let mut interpreter: Interpreter = bincode::serde::decode_from_slice(&input.0, bincode::config::legacy()).unwrap().0;
-
-        let out = interpreter.run_plain(&instruction_table(), &mut context);
-
-        let output = Output {
-            context,
-            interpreter,
-            out,
-        };
-
-        println!("This is the out: {:?}", output.out);
-    }
+    //     println!("This is the out: {:?}", output.out);
+    // }
 }

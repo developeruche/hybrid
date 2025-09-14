@@ -1,43 +1,18 @@
 # Hybrid Framework Architecture
 
-This document provides a comprehensive overview of the Hybrid blockchain framework architecture, focusing on the relationship between the core crates and how they enable RISC-V smart contracts to run on EVM-compatible blockchains.
+This document provides a comprehensive overview of the Hybrid blockchain framework architecture, focusing on the relationship between the core crates and how they enable RISC-V smart contracts to run on EVM-compatible blockchains while also been able to execute EVM contracts.
 
 ## Overview
 
-The Hybrid framework is a revolutionary approach to smart contract development that allows developers to write contracts in Rust, compile them to RISC-V bytecode, and execute them on EVM-compatible blockchains. This hybrid approach combines the safety and expressiveness of Rust with the ubiquity of the Ethereum ecosystem.
+
 
 ## Architecture Components
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Hybrid Framework                         │
-├─────────────────────────────────────────────────────────────┤
-│  Smart Contract (Rust) + hybrid-derive macros              │
-│  ┌─────────────────┐  ┌─────────────────────────────────┐   │
-│  │ Contract Logic  │  │ Generated Code                  │   │
-│  │ #[contract]     │  │ - Function selectors           │   │
-│  │ #[storage]      │  │ - ABI encoding/decoding        │   │
-│  │ #[derive(Error)]│  │ - Interface generation         │   │
-│  │ #[derive(Event)]│  │ - Deployment code              │   │
-│  └─────────────────┘  └─────────────────────────────────┘   │
-├─────────────────────────────────────────────────────────────┤
-│              RISC-V Bytecode Compilation                    │
-│                    (rustc + target)                         │
-├─────────────────────────────────────────────────────────────┤
-│                   Runtime Environment                       │
-│  ┌─────────────────┐  ┌─────────────────────────────────┐   │
-│  │ RISC-V Emulator │  │ Syscall Interface               │   │
-│  │ (rvemu)         │  │ (hybrid-syscalls)               │   │
-│  │                 │  │ - EVM opcode mapping            │   │
-│  │                 │  │ - Type conversions              │   │
-│  └─────────────────┘  └─────────────────────────────────┘   │
-├─────────────────────────────────────────────────────────────┤
-│                 EVM-Compatible Blockchain                   │
-│              (Ethereum, Polygon, BSC, etc.)                 │
-└─────────────────────────────────────────────────────────────┘
-```
+
 
 ## Core Crates
+
+
 
 ### hybrid-derive
 
@@ -113,13 +88,6 @@ The Hybrid framework is a revolutionary approach to smart contract development t
 
 ### Syscall Translation Process
 
-```
-RISC-V Contract          hybrid-syscalls         EVM Blockchain
-─────────────────        ───────────────         ──────────────
-ecall (t0=0x33)    →     Syscall::Caller   →     CALLER opcode
-                         u8::from(syscall)       
-                         syscall.to_string()     
-```
 
 ## Type System Integration
 

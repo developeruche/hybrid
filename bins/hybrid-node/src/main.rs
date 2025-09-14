@@ -102,6 +102,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn test_start_node_testing_smart_contract() {
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
