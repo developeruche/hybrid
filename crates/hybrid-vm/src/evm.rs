@@ -63,9 +63,7 @@ where
     ) -> <<Self::Instructions as InstructionProvider>::InterpreterTypes as InterpreterTypes>::Output
     {
         let context = &mut self.0.data.ctx;
-        // let instructions = &self.0.instruction;
 
-        // interpreter.run_plain(instructions.instruction_table(), context)
         let block = BlockEnv {
             basefee: context.block().basefee(),
             beneficiary: context.block().beneficiary(),
@@ -98,15 +96,13 @@ where
 
         let emu_input = serialize_input(&interpreter, &block, &tx);
 
-        println!("Emulator input: {:?}", emu_input);
-
         let mini_evm_bin: &[u8] = include_bytes!("../../../bins/mini-evm-interpreter/target/riscv64imac-unknown-none-elf/release/runtime");
 
         let mut emulator = match setup_from_mini_elf(mini_evm_bin, &emu_input) {
             Ok(emulator) => emulator,
             Err(err) => {
                 // TODO:: handle this gracefully
-                panic!("Error occurred setting up emulator")
+                panic!("Error occurred setting up emulator: {}", err)
             }
         };
 
@@ -115,37 +111,16 @@ where
         match return_res {
             Ok(_) => (),
             Err(err) => {
-                println!("Emulator Error Occured: {:?}", err)
+                // TODO: Here syscalls would be handled
+                println!("Emulator Error Occured: {:?}", err);
             }
         }
 
         let interpreter_output_size: u64 = emulator.cpu.xregs.read(31);
-        println!("Interpreter output size: {}", interpreter_output_size);
-
-        println!("Register dump: {:?}", emulator.cpu.xregs);
-        println!("Register dump - display: {}", emulator.cpu.xregs);
 
         let raw_output = dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
 
-        let (o_interpreter, o_block, o_tx, o_out) = deserialize_output(raw_output);
-
-        println!("o_interpreter.bytecode: {:?}", o_interpreter.bytecode);
-        println!("o_interpreter.extend: {:?}", o_interpreter.extend);
-        println!("o_interpreter.input: {:?}", o_interpreter.input);
-        println!("o_interpreter.memory: {:?}", o_interpreter.memory);
-        println!("o_interpreter.return_data: {:?}", o_interpreter.return_data);
-        println!("o_interpreter.stack: {:?}", o_interpreter.stack);
-        println!("o_interpreter.sub_routine: {:?}", o_interpreter.sub_routine);
-
-        interpreter.bytecode = o_interpreter.bytecode;
-        interpreter.control = o_interpreter.control;
-        interpreter.extend = o_interpreter.extend;
-        interpreter.input = o_interpreter.input;
-        interpreter.memory = o_interpreter.memory;
-        interpreter.return_data = o_interpreter.return_data;
-        interpreter.stack = o_interpreter.stack;
-        interpreter.sub_routine = o_interpreter.sub_routine;
-        interpreter.runtime_flag = o_interpreter.runtime_flag;
+        let (_, _, _, o_out) = deserialize_output(raw_output);
 
         o_out
     }
@@ -211,9 +186,7 @@ impl<CTX, INSP> HybridEvm<CTX, INSP> {
 
 #[cfg(test)]
 mod tests {
-    use reth::revm::primitives::{B256, U256};
     use rvemu::bus::DRAM_BASE;
-
     use super::*;
 
     #[test]

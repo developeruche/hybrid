@@ -246,7 +246,7 @@ impl VirtqDesc {
 /// };
 /// ```
 #[derive(Debug)]
-struct VirtqAvail {
+pub struct VirtqAvail {
     flags: u16,
     idx: u16,
     ring_start_addr: u64,
@@ -259,6 +259,10 @@ impl VirtqAvail {
             idx: cpu.bus.read(addr.wrapping_add(2), HALFWORD)? as u16,
             ring_start_addr: addr.wrapping_add(4),
         })
+    }
+    
+    pub fn flags(&self) -> u16 {
+        self.flags
     }
 }
 
