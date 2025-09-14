@@ -211,13 +211,7 @@ impl<CTX, INSP> HybridEvm<CTX, INSP> {
 
 #[cfg(test)]
 mod tests {
-    use reth::{
-        revm::{
-            context_interface::block::BlobExcessGasAndPrice,
-            primitives::{Address, Bytes, TxKind, B256, U256},
-        },
-        rpc::types::AccessList,
-    };
+    use reth::revm::primitives::{B256, U256};
     use rvemu::bus::DRAM_BASE;
 
     use super::*;
@@ -284,7 +278,7 @@ mod tests {
 
         let mut emulator = match setup_from_mini_elf(mini_evm_bin, emu_input) {
             Ok(emulator) => emulator,
-            Err(err) => {
+            Err(_err) => {
                 // TODO:: handle this gracefully
                 panic!("Error occurred setting up emulator")
             }
@@ -305,10 +299,5 @@ mod tests {
         let debug_addr = DRAM_BASE + (1024 * 1024 * 1024) - 2000;
         let debug_output = dram_slice(&mut emulator, debug_addr, 13).unwrap();
         println!("Out Debug:: -> {:?}", std::str::from_utf8(debug_output));
-        // println!("Out Debug:: -> {:?}", debug_output);
-
-        // let raw_output = dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
-
-        // let (o_interpreter, _, o_action) = deserialize_output(raw_output).unwrap();
     }
 }
