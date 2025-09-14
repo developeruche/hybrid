@@ -281,6 +281,7 @@ dependencies = [
 [[package]]
 name = "hybrid-contract"
 version = "0.1.0"
+source = "git+https://github.com/developeruche/hybrid.git#da4d1fddf922d3976e88dc239bac75898ae22d90"
 dependencies = [
  "alloy-core",
  "alloy-sol-types",
@@ -291,6 +292,7 @@ dependencies = [
 [[package]]
 name = "hybrid-derive"
 version = "0.1.0"
+source = "git+https://github.com/developeruche/hybrid.git#da4d1fddf922d3976e88dc239bac75898ae22d90"
 dependencies = [
  "alloy-core",
  "alloy-dyn-abi",
@@ -303,6 +305,7 @@ dependencies = [
 [[package]]
 name = "hybrid-syscalls"
 version = "0.1.0"
+source = "git+https://github.com/developeruche/hybrid.git#da4d1fddf922d3976e88dc239bac75898ae22d90"
 dependencies = [
  "thiserror-no-std",
 ]

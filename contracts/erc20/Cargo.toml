@@ -11,8 +11,8 @@ deploy = []
 interface-only = []
 
 [dependencies]
-hybrid-derive = { path = "../../crates/hybrid-derive"}
-hybrid-contract = { path = "../../crates/hybrid-contract"}
+hybrid-derive = { git = "https://github.com/developeruche/hybrid.git" }
+hybrid-contract = { git = "https://github.com/developeruche/hybrid.git" }
 
 alloy-core = { version = "0.8.20", default-features = false }
 alloy-sol-types = { version = "0.8.20", default-features = false }
