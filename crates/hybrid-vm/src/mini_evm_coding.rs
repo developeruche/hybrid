@@ -163,10 +163,15 @@ mod tests {
     use reth::{
         primitives::TxType,
         revm::{
-            context::{BlockEnv, CfgEnv, TxEnv}, db::EmptyDB, interpreter::{
+            context::{BlockEnv, CfgEnv, TxEnv},
+            db::EmptyDB,
+            interpreter::{
                 instruction_table, Gas, InstructionResult, Interpreter, InterpreterAction,
                 InterpreterResult, Stack,
-            }, primitives::{Address, Bytes, TxKind, B256, U256}, state::Bytecode, Journal
+            },
+            primitives::{Address, Bytes, TxKind, B256, U256},
+            state::Bytecode,
+            Journal,
         },
         rpc::types::AccessList,
     };
@@ -235,7 +240,10 @@ mod tests {
             deserialize_input(&serialized);
 
         // Compare interpreter bytecode (since Interpreter doesn't implement PartialEq)
-        assert_eq!(interpreter.bytecode.bytecode(), deserialized_interpreter.bytecode.bytecode());
+        assert_eq!(
+            interpreter.bytecode.bytecode(),
+            deserialized_interpreter.bytecode.bytecode()
+        );
 
         // Compare block
         assert_eq!(block.number, deserialized_block.number);
@@ -273,7 +281,10 @@ mod tests {
             deserialize_output(&serialized);
 
         // Compare interpreter bytecode
-        assert_eq!(interpreter.bytecode.bytecode(), deserialized_interpreter.bytecode.bytecode());
+        assert_eq!(
+            interpreter.bytecode.bytecode(),
+            deserialized_interpreter.bytecode.bytecode()
+        );
 
         // Compare block
         assert_eq!(block.number, deserialized_block.number);
