@@ -250,9 +250,3 @@ Special thanks to the r55 team for their pioneering work in bringing RISC-V exec
 ## Disclaimer
 
 **Note**: This is experimental technology. Use with caution in production environments.
-
-## Support
-
-- **Issues**: [GitHub Issues](https://github.com/developeruche/hybrid/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/developeruche/hybrid/discussions)
-- **Documentation**: [Hybrid Docs](https://docs.hybrid.dev) *(coming soon)*
