@@ -1,20 +1,16 @@
+#![allow(dead_code)]
 //! Utilities for the mini-evm interpreter.
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::arch::asm;
 use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
 use ext_revm::{
-    context::{BlockEnv, CfgEnv, JournalTr, TxEnv},
-    context_interface::context::ContextError,
-    database::EmptyDB,
+    context::{BlockEnv, TxEnv},
     interpreter::{Interpreter, InterpreterAction},
-    Context, Database, Journal,
 };
-use serde::{Deserialize, Serialize};
 
-use crate::Output;
 
-pub fn read_input() -> Result<(Interpreter, Context), String> {
+pub fn read_input() -> Result<(Interpreter, BlockEnv, TxEnv), String> {
     let input = copy_from_mem();
     let interpreter_n_context = deserialize_input(input);
 
@@ -35,14 +31,13 @@ pub unsafe fn debug_println_dyn_data(data: &[u8]) {
     dest.copy_from_slice(data);
 }
 
-pub fn write_output(output: &Output) {
-    let s_interpreter = bincode::serde::encode_to_vec(&output.interpreter, bincode::config::legacy()).unwrap();
-    let serialized = serialize_output(&s_interpreter, &output.context, &output.out);
+pub fn write_output(interpreter: &Interpreter, block: &BlockEnv, tx: &TxEnv, out: &InterpreterAction) {
+    let serialized = serialize_output(interpreter, block, tx, out);
     let length = serialized.len() as u64;
 
     unsafe {
         asm!(
-            "mv a0, {val}",
+            "mv t6, {val}",
             val = in(reg) length,
         );
     }
@@ -64,117 +59,78 @@ pub unsafe fn write_to_memory(address: usize, data: &[u8]) {
     dest.copy_from_slice(data);
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct MiniContext<
-    BLOCK = BlockEnv,
-    TX = TxEnv,
-    CFG = CfgEnv,
-    DB: Database = EmptyDB,
-    JOURNAL: JournalTr<Database = DB> = Journal<DB>,
-    CHAIN = (),
-> {
-    /// Block information.
-    pub block: BLOCK,
-    /// Transaction information.
-    pub tx: TX,
-    /// Configurations.
-    pub cfg: CFG,
-    /// EVM State with journaling support and database.
-    pub journaled_state: JOURNAL,
-    /// Inner context.
-    pub chain: CHAIN,
-    #[serde(skip, default = "default_result::<DB>")]
-    /// Error that happened during execution.
-    pub error: Result<(), ContextError<DB::Error>>,
-}
 
-fn default_result<DB: Database>() -> Result<(), ContextError<DB::Error>> {
-    Ok(())
-}
 
-impl MiniContext {
-    pub fn from_context(context: Context) -> Self {
-        Self {
-            block: context.block,
-            tx: context.tx,
-            cfg: context.cfg,
-            journaled_state: context.journaled_state,
-            chain: context.chain,
-            error: context.error,
-        }
-    }
-}
-
-impl From<MiniContext> for Context {
-    fn from(mini_context: MiniContext) -> Self {
-        Self {
-            block: mini_context.block,
-            tx: mini_context.tx,
-            cfg: mini_context.cfg,
-            journaled_state: mini_context.journaled_state,
-            chain: mini_context.chain,
-            error: mini_context.error,
-        }
-    }
-}
-
-pub fn deserialize_input(data: &[u8]) -> (Interpreter, Context) {
+pub fn deserialize_input(data: &[u8]) -> (Interpreter, BlockEnv, TxEnv) {
     // Check minimum length for headers (16 bytes for two u64 lengths)
-    if data.len() < 16 {
-        // return Err("Data too short for headers".into());
+    if data.len() < 24 {
         panic!("Data too short for headers");
     }
 
     // Read the lengths from the first 16 bytes
-    let sc_len = u64::from_le_bytes(data[0..8].try_into().unwrap()) as usize;
-    let mc_len = u64::from_le_bytes(data[8..16].try_into().unwrap()) as usize;
+    let si_len = u64::from_le_bytes(data[0..8].try_into().unwrap()) as usize;
+    let sb_len = u64::from_le_bytes(data[8..16].try_into().unwrap()) as usize;
+    let st_len = u64::from_le_bytes(data[16..24].try_into().unwrap()) as usize;
 
     // Check total length
-    let expected_len = 16 + sc_len + mc_len;
+    let expected_len = si_len + sb_len + st_len + 24;
     if data.len() != expected_len {
-        // return Err(format!(
-        //     "Data length mismatch: expected {}, got {}",
-        //     expected_len,
-        //     data.len()
-        // )
-        // .into());
-        panic!("Data length mismatch: expected {}, got {}", expected_len, data.len());
+        panic!(
+            "Data length mismatch: expected {}, got {}",
+            expected_len,
+            data.len()
+        );
     }
 
-    // Extract the context bytes and deserialize
-    let context_bytes = &data[16..16 + sc_len];
-    let mini_context: MiniContext = bincode::serde::decode_from_slice(context_bytes, bincode::config::legacy()).unwrap().0;
-    unsafe { debug_println() };
-    let context = Context::from(mini_context);
-
     // Extract the interpreter bytes
-    let interpreter_bytes = &data[16 + sc_len..16 + sc_len + mc_len];
-    
-    let interpreter = bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy()).unwrap().0;
+    let interpreter_bytes = &data[24..24 + si_len];
+    let interpreter: Interpreter =
+        bincode::serde::decode_from_slice(interpreter_bytes, bincode::config::legacy())
+            .unwrap()
+            .0;
 
-    (interpreter, context)
+    // Extract the block bytes
+    let block_bytes = &data[24 + si_len..24 + si_len + sb_len];
+    let block: BlockEnv = bincode::serde::decode_from_slice(block_bytes, bincode::config::legacy())
+        .unwrap()
+        .0;
+
+    // Extract the transaction bytes
+    let tx_bytes = &data[24 + si_len + sb_len..24 + si_len + sb_len + st_len];
+    let tx: TxEnv = bincode::serde::decode_from_slice(tx_bytes, bincode::config::legacy())
+        .unwrap()
+        .0;
+
+    (interpreter, block, tx)
 }
 
 pub fn serialize_output(
-    s_interpreter: &[u8],
-    context: &Context,
+    interpreter: &Interpreter,
+    block: &BlockEnv,
+    tx: &TxEnv,
     out: &InterpreterAction,
 ) -> Vec<u8> {
-    let mini_context = MiniContext::from_context(context.clone());
-    let s_context = bincode::serde::encode_to_vec(&mini_context, bincode::config::legacy()).unwrap();
+    let s_interpreter =
+        bincode::serde::encode_to_vec(interpreter, bincode::config::legacy()).unwrap();
+    let s_block = bincode::serde::encode_to_vec(block, bincode::config::legacy()).unwrap();
+    let s_tx = bincode::serde::encode_to_vec(tx, bincode::config::legacy()).unwrap();
     let s_out = bincode::serde::encode_to_vec(out, bincode::config::legacy()).unwrap();
 
-    let sc_len = s_context.len();
-    let mc_len = s_interpreter.len();
-    let out_len = s_out.len();
+    let si_len = s_interpreter.len();
+    let sb_len = s_block.len();
+    let st_len = s_tx.len();
+    let so_len = s_out.len();
 
-    let mut serialized = Vec::with_capacity(sc_len + mc_len + out_len + 24);
+    let mut serialized = Vec::with_capacity(si_len + sb_len + st_len + so_len + 32);
 
-    serialized.extend((sc_len as u64).to_le_bytes());
-    serialized.extend((mc_len as u64).to_le_bytes());
-    serialized.extend((out_len as u64).to_le_bytes());
-    serialized.extend(s_context);
+    serialized.extend((si_len as u64).to_le_bytes());
+    serialized.extend((sb_len as u64).to_le_bytes());
+    serialized.extend((st_len as u64).to_le_bytes());
+    serialized.extend((so_len as u64).to_le_bytes());
+
     serialized.extend(s_interpreter);
+    serialized.extend(s_block);
+    serialized.extend(s_tx);
     serialized.extend(s_out);
 
     serialized
