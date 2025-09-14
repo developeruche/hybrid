@@ -167,19 +167,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "contract-derive"
-version = "0.1.0"
-source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
-dependencies = [
- "alloy-core",
- "alloy-dyn-abi",
- "alloy-sol-types",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -245,27 +232,8 @@ version = "0.1.0"
 dependencies = [
  "alloy-core",
  "alloy-sol-types",
- "contract-derive",
- "eth-riscv-runtime",
-]
-
-[[package]]
-name = "eth-riscv-runtime"
-version = "0.1.0"
-source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
-dependencies = [
- "alloy-core",
- "alloy-sol-types",
- "eth-riscv-syscalls",
- "riscv-rt",
-]
-
-[[package]]
-name = "eth-riscv-syscalls"
-version = "0.1.0"
-source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
-dependencies = [
- "thiserror-no-std",
+ "hybrid-contract",
+ "hybrid-derive",
 ]
 
 [[package]]
@@ -276,9 +244,9 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "getrandom"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4567c8db10ae91089c99af84c68c38da3ec2f087c3f82960bcdbf3656b6f4d7"
+checksum = "335ff9f135e4384c8150d6f27c6daed433577f86b4750418338c01a1a2528592"
 dependencies = [
  "cfg-if",
  "libc",
@@ -308,6 +276,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "hybrid-contract"
+version = "0.1.0"
+dependencies = [
+ "alloy-core",
+ "alloy-sol-types",
+ "hybrid-syscalls",
+ "riscv-rt",
+]
+
+[[package]]
+name = "hybrid-derive"
+version = "0.1.0"
+dependencies = [
+ "alloy-core",
+ "alloy-dyn-abi",
+ "alloy-sol-types",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "hybrid-syscalls"
+version = "0.1.0"
+dependencies = [
+ "thiserror-no-std",
 ]
 
 [[package]]
@@ -643,15 +640,15 @@ checksum = "ba73ea9cf16a25df0c8caa16c51acb937d5712a8429db78a3ee29d5dcacd3a65"
 
 [[package]]
 name = "wasi"
-version = "0.11.0+wasi-snapshot-preview1"
+version = "0.11.1+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
+checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
 name = "winnow"
-version = "0.7.6"
+version = "0.7.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63d3fcd9bba44b03821e7d699eeee959f3126dcc4aa8e4ae18ec617c2a5cea10"
+checksum = "21a0236b59786fed61e2a80582dd500fe61f18b5dca67a4a067d0bc9039339cf"
 
 [[package]]
 name = "zerocopy"

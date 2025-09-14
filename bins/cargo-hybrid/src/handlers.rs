@@ -4,7 +4,6 @@ use crate::utils::deploy_riscv_bytecode;
 use alloy::primitives::hex;
 use anyhow::{anyhow, Result};
 use colored::Colorize;
-use fs_extra::dir::{self, CopyOptions};
 use hybrid_compile::run_contract_compilation;
 use include_dir::{include_dir, Dir};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -24,9 +23,15 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
             // Get available templates for the error message
             let available_templates: Vec<String> = TEMPLATES_DIR
                 .dirs()
-                .map(|dir| dir.path().file_name().unwrap_or_default().to_string_lossy().to_string())
+                .map(|dir| {
+                    dir.path()
+                        .file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .to_string()
+                })
                 .collect();
-            
+
             return Err(anyhow!(
                 "Template '{}' not found. Available templates: {}",
                 args.template,
@@ -60,7 +65,7 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
 
     // Create the target directory
     fs::create_dir_all(&target_dir)?;
-    
+
     // Helper function to recursively extract files
     fn extract_recursively(
         dir: &include_dir::Dir,
@@ -73,32 +78,32 @@ pub fn create_new_project(args: &NewArgs) -> Result<()> {
             // Get path relative to the template root
             let file_path = rel_path.trim_start_matches(&format!("{}/", template_name));
             let target_file_path = target_dir.join(file_path);
-            
+
             // Create parent directories if needed
             if let Some(parent) = target_file_path.parent() {
                 fs::create_dir_all(parent)?;
             }
-            
+
             fs::write(target_file_path, file.contents())?;
         }
-        
+
         // Process all subdirectories
         for subdir in dir.dirs() {
             let rel_path = subdir.path().to_string_lossy();
             // Get path relative to the template root
             let dir_path = rel_path.trim_start_matches(&format!("{}/", template_name));
             let target_subdir_path = target_dir.join(dir_path);
-            
+
             // Create the subdirectory
             fs::create_dir_all(&target_subdir_path)?;
-            
+
             // Recursively extract its contents
             extract_recursively(subdir, target_dir, template_name)?;
         }
-        
+
         Ok(())
     }
-    
+
     // Extract all template files
     extract_recursively(template_dir, &target_dir, &args.template)?;
 

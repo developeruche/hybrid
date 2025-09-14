@@ -1,8 +1,19 @@
 [workspace]
-members = [ "bins/cargo-hybrid", "bins/hybrid-node", "crates/hybrid-compile", "crates/hybrid-vm", "crates/hybrid-evm"]
+members = [ 
+    "bins/cargo-hybrid", 
+    "bins/hybrid-node", 
+    "crates/hybrid-compile", 
+    "crates/hybrid-ethereum",
+    "crates/hybrid-syscalls", 
+    "crates/hybrid-vm", 
+    "crates/rvemu"]
 
+exclude = [
+    "crates/hybrid-contract", 
+    "crates/hybrid-derive", 
+    "contracts/*",
+    "bins/mini-evm-interpreter"]
 
-exclude = ["contracts/*", "examples/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -17,35 +28,45 @@ edition = "2021"
 
 
 [workspace.dependencies]
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-anyhow = "1.0.98"
-indicatif = "0.17"
-colored = "2.1"
-eyre = "0.6"
+# hybrid
+hybrid-syscalls = { path = "crates/hybrid-syscalls" }
+hybrid-vm = { path = "crates/hybrid-vm" }
+hybrid-compile = { path = "crates/hybrid-compile" }
+hybrid-ethereum = { path = "crates/hybrid-ethereum" }
+hybrid-contract = { path = "crates/hybrid-contract" }
 
-# reth 
-reth = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12"}
+# rvemu
+rvemu = { path = "crates/rvemu" }
+
+# error
+eyre = "0.6.12"
+thiserror = "2.0.3"
+anyhow = "1.0.98"
+
+#reth 
+reth = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
 reth-ethereum = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
 reth-tracing = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
 reth-ethereum-payload-builder = { git = "https://github.com/developeruche/reth.git", rev = "54ed1ac9dc087b909e346ba2855935edee7c5764", version = "1.3.12" }
 
-# reth local for testing
-# reth = { path = "../../CONTRIBUTIONS/reth/bin/reth" }
-# reth-ethereum = { path = "../../CONTRIBUTIONS/reth/crates/ethereum/reth" }
-# reth-tracing = { path = "../../CONTRIBUTIONS/reth/crates/tracing" }
-# reth-ethereum-payload-builder = { path = "../../CONTRIBUTIONS/reth/crates/ethereum/payload" }
 
-
+#alloy
 alloy-evm = { version = "0.5.0", default-features = false }
 alloy-genesis = { version = "0.14.0", default-features = false }
 alloy-primitives = { version = "1.0.0", default-features = false, features = ["map-foldhash"] }
 
+#revm
+revm = { git = "https://github.com/developeruche/revm.git", default-features = false, branch = "hybrid-revm-v2", features = ["serde"]}
 
-# revm
-revm = { version = "22.0.1", default-features = false }
+# tracing (log)
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# workspace crate
-hybrid-compile = { path = "crates/hybrid-compile"}
-hybrid-vm = { path = "crates/hybrid-vm"}
-hybrid-evm = { path = "crates/hybrid-evm" }
+# serde 
+serde = { version = "1.0", default-features = false, features = ["derive", "rc"] }
+serde_json = { version = "1.0", default-features = false }
+bincode = { version = "2.0", features = ["serde", "alloc"], default-features = false }
+
+# misc
+indicatif = "0.17"
+colored = "2.1"

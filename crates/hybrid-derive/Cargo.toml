@@ -1,0 +1,22 @@
+[package]
+name = "hybrid-derive"
+version = "0.1.0"
+license = "MIT"
+authors = ["Developer Uche <developeruche@gmail.com>"]
+categories = ["compilers"]
+keywords = ["revm", "evm", "ethereum", "blockchain", "no_std"]
+repository = "https://github.com/developeruche/hybrid"
+documentation = "https://github.com/developeruche/hybrid"
+homepage = "https://github.com/developeruche/hybrid"
+edition = "2021"
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "1.0", features = ["full"] }
+alloy-core = { version = "0.8.20", default-features = false }
+alloy-sol-types = { version = "0.8.20", default-features = false }
+alloy-dyn-abi = { version = "0.8.20", default-features = false }
+
+[lib]
+proc-macro = true

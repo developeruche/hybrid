@@ -1,37 +1,21 @@
-# Hybrid Blockchain Framework
+# Hybrid Framework
 
-A modern blockchain framework for developing, deploying, and interacting with RISCV-based smart contracts on Ethereum.
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
+A framework and node for developing, deploying, and interacting with smart contracts written in Rust and Solidity (Including and language that compiles to EVM bytecode, such as Vyper, Yul, Huff, e.t.c.)
 
 ## Overview
 
-Hybrid Blockchain Framework is a complete toolkit for blockchain development, featuring:
+The Hybrid framework comprises a two part system:
+
+1. **Hybrid Node**: A standalone Ethereum node with native RISC-V contract execution, also enabling EVM execution using a `mini-evm-interpreter`.
+2. **Cargo Hybrid**: This is a tool that enables the development, deployment, tests, and interaction with smart contracts written in Rust, this smart contracts are compiled to RISC-V IMAC 64 bits.
+
+## Key Features
 
 - **RISCV Smart Contract Development**: Write contracts in Rust compiled to RISCV bytecode
 - **Local Blockchain Node**: Run a development blockchain with RISCV VM support
 - **Deployment Tools**: Deploy RISCV contracts with a simple command
-- **Dual VM Integration**: Support for both RISCV VM (r55) and EVM in a single node
-- **Hybrid Execution Environment**: Seamlessly switch between EVM and RISC-V execution
-- **Rust Ecosystem Integration**: Extends Cargo to support blockchain development workflow
-
-## Project Structure
-
-The project is organized into the following directories:
-
-- `bins/` - Executable binaries
-  - `cargo-hybrid/` - CLI tool for RISCV contract development (Phase 1)
-  - `hybrid-node/` - Hybrid blockchain node implementation based on RETH (Phase 2)
-- `crates/` - Core library components
-  - `compile/` - Contract compilation tooling for Rust to RISCV
-  - `vm/` - Virtual machine for RISCV contract execution (r55)
-  - `hybrid_evm/` - Integration between EVM and RISC-V execution
-- `contracts/` - Smart contract templates
-  - `bare/` - Minimal contract template
-  - `erc20/` - ERC20 token implementation
-  - `storage/` - Contract with storage examples
-- `examples/` - Example projects demonstrating hybrid functionality
+- **Dual VM Integration**: Support for both RISCV VM and EVM in a single node
+- **Hybrid Execution Environment**: Seamlessly switch between EVM and RISC-V execution, enabled by a EVM emulator.
 
 ## Getting Started
 
@@ -180,57 +164,37 @@ hybrid-node config
 
 ### Architecture
 
-The Hybrid Node is built on a modular architecture:
+The framework consists of several key components:
 
-- Command-line interface for node control
-- Core VM implementation supporting dual execution environments
-- Custom payload builder for both EVM and RISC-V transactions
-- JSON-RPC API compatible with standard Ethereum clients
+- **hybrid-derive**: Procedural macros for contract development (`#[contract]`, `#[storage]`, etc.)
+- **hybrid-compile**: Rust-to-RISC-V compilation pipeline
+- **hybrid-vm**: Virtual machine for executing RISC-V contracts in EVM context
+- **hybrid-ethereum**: Custom Ethereum node implementation using Reth
+- **rvemu**: RISC-V emulator implementation, a clone and modification of the [RISC-V emulator](https://github.com/r55-eth/rvemu)
+- **cargo-hybrid**: Command-line interface for development workflow
 
-## Core Components
-
-### Compile Crate
-
-The `compile` crate handles the compilation of Rust smart contracts to RISCV bytecode format required by the r55 VM.
-
-### VM Crate
-
-The `vm` crate provides the execution environment for both RISCV (r55) and EVM, allowing smart contracts to run on the Hybrid blockchain.
-
-### Hybrid EVM Crate
-
-The `hybrid_evm` crate implements the integration between the EVM and RISC-V execution environments, enabling seamless switching between both virtual machines.
 
 ## Development Workflow
 
-### Two-Phase Development
+1. **Create Project**: Use `cargo hybrid new` to scaffold a new contract
+2. **Implement Logic**: Write contract in `src/lib.rs` using Hybrid macros
+3. **Local Testing**: Use `cargo test` for unit tests
+4. **Build**: Compile with `cargo hybrid build`
+5. **Deploy**: Deploy with `cargo hybrid deploy`
+6. **Interact**: Use standard Ethereum tools for interaction
 
-#### Phase 1: Smart Contract Development
-1. **Create a new contract** using `cargo hybrid new`
-2. **Develop** your contract in Rust
-3. **Test** your contract with `cargo hybrid check`
-4. **Build** your contract to RISCV bytecode with `cargo hybrid build`
-5. **Start a local node** with `cargo hybrid node` (or `hybrid-node start --dev`)
-6. **Deploy** your RISCV contract with `cargo hybrid deploy`
+### Contract Structure
 
-#### Phase 2: Blockchain Node
-1. **Start a local node** with `hybrid-node start --dev`
-2. **Deploy and interact** with both EVM and RISCV-based contracts
-3. **Configure** your node as needed using the available options
-4. **Develop hybrid applications** that leverage both execution environments
+Hybrid contracts require specific project structure:
 
-### Troubleshooting
-
-Common issues you may encounter:
-
-- **Error: 'hybrid-node' command not found**  
-  Make sure the hybrid-node executable is installed and available in your PATH.
-
-- **Error: No compiled contracts found in 'out'**  
-  Run `cargo hybrid build` before attempting to deploy.
-
-- **Error: Failed to decode constructor arguments**  
-  Make sure the constructor arguments are properly hex encoded.
+```
+my_contract/
+├── Cargo.toml          # Must include required features and dependencies
+├── src/
+│   └── lib.rs          # Contract implementation
+└── out/                # Generated bytecode (after build)
+    └── my_contract.bin
+```
 
 ## Acknowledgments
 
@@ -243,3 +207,5 @@ Special thanks to the r55 team for their pioneering work in bringing RISC-V exec
 ## License
 
 [MIT License](LICENSE)
+
+**Note**: This is experimental technology. Use with caution in production environments.

@@ -11,9 +11,8 @@ documentation.workspace = true
 homepage.workspace = true
 edition.workspace = true
 
-
 [dependencies]
-hybrid-vm.workspace = true
+hybrid-ethereum.workspace = true
 tokio = { version = "1.45", features = ["full"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

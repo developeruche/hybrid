@@ -3,8 +3,8 @@
 
 use core::default::Default;
 
-use contract_derive::{contract, storage, Event, Error};
-use eth_riscv_runtime::types::*;
+use hybrid_derive::{contract, storage, Event, Error};
+use hybrid_contract::hstd::*;
 
 use alloy_core::primitives::{Address, U256};
 

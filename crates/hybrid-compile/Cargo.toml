@@ -1,6 +1,5 @@
 [package]
 name = "hybrid-compile"
-description = "A lib for compiling RUST code to to risc-v smart contract bytecode"
 version.workspace = true
 license.workspace = true
 authors.workspace = true

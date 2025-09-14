@@ -28,7 +28,7 @@ async fn start_node(is_dev: bool) -> Result<()> {
     );
 
     // Run the node using the vm crate's run_node function
-    hybrid_vm::run_node(is_dev)
+    hybrid_ethereum::run_node(is_dev)
         .await
         .map_err(|e| eyre::eyre!("Node error: {}", e))?;
 
@@ -67,11 +67,9 @@ mod tests {
         rpc::types::TransactionRequest,
         signers::local::PrivateKeySigner,
     };
-    use std::time::Duration;
 
     #[tokio::test]
     async fn test_start_node_testing_riscv() {
-        tokio::time::sleep(Duration::from_secs(10)).await;
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
         let anvil = Anvil::new().try_spawn().unwrap();
@@ -105,6 +103,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_node_testing_smart_contract() {
+        // sleep for 10 seconds
+        tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
         let anvil = Anvil::new().try_spawn().unwrap();
@@ -133,6 +133,6 @@ mod tests {
             .contract_address()
             .expect("Failed to get contract address");
 
-        println!("Deployed contract at address: {}", contract_address);
+        println!("Deployed contract at address: {}", contract_address); // 0x5FbDB2315678afecb367f032d93F642f64180aa3
     }
 }

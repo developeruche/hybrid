@@ -167,19 +167,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "contract-derive"
-version = "0.1.0"
-source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
-dependencies = [
- "alloy-core",
- "alloy-dyn-abi",
- "alloy-sol-types",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -240,25 +227,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
-name = "eth-riscv-runtime"
-version = "0.1.0"
-source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
-dependencies = [
- "alloy-core",
- "alloy-sol-types",
- "eth-riscv-syscalls",
- "riscv-rt",
-]
-
-[[package]]
-name = "eth-riscv-syscalls"
-version = "0.1.0"
-source = "git+https://github.com/r55-eth/r55.git?branch=main#31f786835decfaf9dd01df05059520a502bd0024"
-dependencies = [
- "thiserror-no-std",
-]
-
-[[package]]
 name = "foldhash"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -298,6 +266,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "hybrid-contract"
+version = "0.1.0"
+dependencies = [
+ "alloy-core",
+ "alloy-sol-types",
+ "hybrid-syscalls",
+ "riscv-rt",
+]
+
+[[package]]
+name = "hybrid-derive"
+version = "0.1.0"
+dependencies = [
+ "alloy-core",
+ "alloy-dyn-abi",
+ "alloy-sol-types",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "hybrid-syscalls"
+version = "0.1.0"
+dependencies = [
+ "thiserror-no-std",
 ]
 
 [[package]]
@@ -550,8 +547,8 @@ version = "0.1.0"
 dependencies = [
  "alloy-core",
  "alloy-sol-types",
- "contract-derive",
- "eth-riscv-runtime",
+ "hybrid-contract",
+ "hybrid-derive",
 ]
 
 [[package]]

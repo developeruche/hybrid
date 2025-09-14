@@ -11,8 +11,8 @@ deploy = []
 interface-only = []
 
 [dependencies]
-contract-derive = { git = "https://github.com/r55-eth/r55.git", branch = "main"}
-eth-riscv-runtime = { git = "https://github.com/r55-eth/r55.git", branch = "main" }
+hybrid-derive = { path = "../../crates/hybrid-derive"}
+hybrid-contract = { path = "../../crates/hybrid-contract"}
 
 alloy-core = { version = "0.8.20", default-features = false }
 alloy-sol-types = { version = "0.8.20", default-features = false }
