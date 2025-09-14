@@ -1,6 +1,6 @@
 use reth::revm::{
     context::{BlockEnv, TxEnv},
-    interpreter::{Interpreter, InterpreterAction}
+    interpreter::{Interpreter, InterpreterAction},
 };
 
 pub fn serialize_input(interpreter: &Interpreter, block: &BlockEnv, tx: &TxEnv) -> Vec<u8> {
@@ -161,11 +161,10 @@ mod tests {
         revm::{
             context::{BlockEnv, TxEnv},
             interpreter::{
-                Gas, InstructionResult, Interpreter, InterpreterAction,
-                InterpreterResult,
+                Gas, InstructionResult, Interpreter, InterpreterAction, InterpreterResult,
             },
             primitives::{Address, Bytes, TxKind, B256, U256},
-            state::Bytecode
+            state::Bytecode,
         },
         rpc::types::AccessList,
     };

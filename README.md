@@ -1,140 +1,168 @@
 # Hybrid Framework
 
-A comprehensive blockchain development framework that enables writing smart contracts in Rust and deploying them on EVM-compatible blockchains.
+A framework and node for developing, deploying, and interacting with smart contracts written in Rust and Solidity (Including and language that compiles to EVM bytecode, such as Vyper, Yul, Huff, e.t.c.)
 
 ## Overview
 
-The Hybrid Framework bridges the Rust and Ethereum ecosystems by allowing developers to write smart contracts in Rust that compile to RISC-V bytecode and execute seamlessly on any EVM-compatible blockchain. The framework provides a complete toolchain from development to deployment, including a custom Ethereum node implementation.
+The Hybrid framework comprises a two part system:
+
+1. **Hybrid Node**: A standalone Ethereum node with native RISC-V contract execution, also enabling EVM execution using a `mini-evm-interpreter`.
+2. **Cargo Hybrid**: This is a tool that enables the development, deployment, tests, and interaction with smart contracts written in Rust, this smart contracts are compiled to RISC-V IMAC 64 bits.
 
 ## Key Features
 
-- **Rust Smart Contracts**: Write contracts in Rust with full type safety and memory safety
-- **EVM Compatibility**: Deploy and interact with contracts on any EVM-compatible blockchain
-- **Complete Toolchain**: Full development lifecycle support from creation to deployment
-- **Standard Integration**: Works with existing Ethereum tools (Hardhat, Foundry, web3 libraries)
-- **Custom Node**: Standalone Ethereum node with native RISC-V contract execution
-- **Performance Optimized**: Efficient RISC-V emulation with future JIT compilation support
+- **RISCV Smart Contract Development**: Write contracts in Rust compiled to RISCV bytecode
+- **Local Blockchain Node**: Run a development blockchain with RISCV VM support
+- **Deployment Tools**: Deploy RISCV contracts with a simple command
+- **Dual VM Integration**: Support for both RISCV VM and EVM in a single node
+- **Hybrid Execution Environment**: Seamlessly switch between EVM and RISC-V execution, enabled by a EVM emulator.
 
-## Quick Start
+## Getting Started
+
+### Prerequisites
+
+### mac-os (was unable to lay my hands on another pc... sorryy :) )
+```sh
+brew tap riscv-software-src/riscv
+brew install riscv-gnu-toolchain gettext
+rustup target add x86_64-unknown-linux-gnu
+```
+
+- Rust toolchain (stable)
+- Cargo package manager
 
 ### Installation
 
+#### Method 1: One-line Installation Script (Recommended)
+
 ```bash
-# Install the Hybrid CLI tool
-cargo install --path bins/cargo-hybrid
+curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/developeruche/hybrid/main/scripts/install.sh -sSf | sh
 ```
 
-### Create Your First Contract
+This script will:
+1. Check for required dependencies (Git, Rust)
+2. Clone the repository
+3. Install both cargo-hybrid and hybrid-node
+4. Clean up temporary files
+
+#### Method 2: Manual Installation
+
+If you prefer to install manually, you can clone the repository and install the binaries yourself:
 
 ```bash
-# Create a new contract project
-cargo hybrid new my_contract
-cd my_contract
+# Clone the repository
+git clone https://github.com/developeruche/hybrid.git
 
-# Build the contract
+# Install the binaries
+cargo install --path hybrid/bins/cargo-hybrid
+cargo install --path hybrid/bins/hybrid-node
+
+# Optional: Remove the cloned repository if no longer needed
+rm -rf hybrid
+```
+
+## Using cargo-hybrid (Phase 1)
+
+The `cargo-hybrid` tool provides a complete workflow for RISCV-based smart contract development. It extends the Rust ecosystem to support blockchain development.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `new` | Create a new smart contract project |
+| `build` | Build a smart contract |
+| `check` | Check if a smart contract compiles |
+| `deploy` | Deploy a smart contract to the blockchain |
+| `node` | Start a local development node |
+
+### Creating a New Contract
+
+```
+cargo hybrid new [NAME] --template [TEMPLATE]
+```
+
+Available templates:
+- `storage` (default) - Contract with storage examples
+- `bare` - Minimal contract template
+- `erc20` - ERC20 token implementation
+
+Example:
+```
+cargo hybrid new my-token --template erc20
+```
+
+### Building Contracts
+
+```
+cd my-token
 cargo hybrid build
+```
 
-# Start a development node (optional)
+This compiles your Rust smart contract to RISCV bytecode and outputs the binary to the `out` directory.
+
+Options:
+- `--out DIR` - Specify a custom output directory (default: "out")
+
+### Checking Contracts
+
+To check if your contract compiles without generating output:
+
+```
+cargo hybrid check
+```
+
+### Deploying Contracts
+
+```
+cargo hybrid deploy --rpc [RPC_URL]
+```
+
+Options:
+- `--out DIR` - Specify the directory containing compiled contracts (default: "out")
+- `--rpc URL` - RPC endpoint to deploy to (default: "http://localhost:8545")
+- `--private-key KEY` - Private key to use for deployment (default key provided)
+- `--encoded-args ARGS` - Constructor arguments (hex encoded, with or without 0x prefix)
+
+Example with constructor arguments:
+```
+cargo hybrid deploy --encoded-args 0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb92266
+```
+
+### Starting a Local Node
+
+You can also start a local development node directly using cargo-hybrid:
+
+```
 cargo hybrid node
 ```
 
-### Example Contract
+This starts the hybrid node in development mode.
 
-```rust
-#![no_std]
-#![no_main]
+## Running the Hybrid Node (Phase 2)
 
-use alloy_core::primitives::{Address, U256};
-use hybrid_contract::hstd::*;
-use hybrid_derive::{contract, storage, Event, Error};
+The Hybrid blockchain node is a RETH-based implementation that supports both EVM and RISCV VM (r55) in a unified execution environment.
 
-#[derive(Event)]
-pub struct Transfer {
-    #[indexed]
-    pub from: Address,
-    #[indexed] 
-    pub to: Address,
-    pub amount: U256,
-}
+### Starting the Node
 
-#[derive(Error)]
-pub enum TokenError {
-    InsufficientBalance(U256),
-    ZeroAmount,
-}
-
-#[storage]
-pub struct Token {
-    balances: Mapping<Address, Slot<U256>>,
-    total_supply: Slot<U256>,
-}
-
-#[contract]
-impl Token {
-    pub fn new(initial_supply: U256) -> Self {
-        let mut token = Token::default();
-        let deployer = msg_sender();
-        
-        token.balances[deployer].write(initial_supply);
-        token.total_supply.write(initial_supply);
-        
-        log::emit(Transfer::new(Address::ZERO, deployer, initial_supply));
-        token
-    }
-    
-    pub fn transfer(&mut self, to: Address, amount: U256) -> Result<bool, TokenError> {
-        let from = msg_sender();
-        let from_balance = self.balances[from].read();
-        
-        if from_balance < amount {
-            return Err(TokenError::InsufficientBalance(from_balance));
-        }
-        if amount == U256::ZERO {
-            return Err(TokenError::ZeroAmount);
-        }
-        
-        self.balances[from].write(from_balance - amount);
-        let to_balance = self.balances[to].read();
-        self.balances[to].write(to_balance + amount);
-        
-        log::emit(Transfer::new(from, to, amount));
-        Ok(true)
-    }
-    
-    pub fn balance_of(&self, owner: Address) -> U256 {
-        self.balances[owner].read()
-    }
-}
+```
+hybrid-node start
 ```
 
-## CLI Commands
+Options:
+- `--dev` - Run in development mode with additional debugging features
 
-### Project Management
-```bash
-cargo hybrid new <name>        # Create new contract project
-cargo hybrid build             # Compile contract to RISC-V bytecode
-cargo hybrid check             # Check contract syntax and types
+Example:
+```
+hybrid-node start --dev
 ```
 
-### Deployment & Testing
-```bash
-cargo hybrid deploy [OPTIONS]  # Deploy contract to blockchain
-cargo hybrid node              # Start development node
+### Viewing Node Configuration
+
+```
+hybrid-node config
 ```
 
-### Deploy Options
-```bash
-# Deploy to local development node
-cargo hybrid deploy
-
-# Deploy to specific network
-cargo hybrid deploy --rpc-url https://mainnet.infura.io/v3/YOUR-KEY --private-key YOUR-PRIVATE-KEY
-
-# Deploy with constructor arguments
-cargo hybrid deploy --constructor-args "1000000000000000000000"
-```
-
-## Architecture
+### Architecture
 
 The framework consists of several key components:
 
@@ -142,10 +170,20 @@ The framework consists of several key components:
 - **hybrid-compile**: Rust-to-RISC-V compilation pipeline
 - **hybrid-vm**: Virtual machine for executing RISC-V contracts in EVM context
 - **hybrid-ethereum**: Custom Ethereum node implementation using Reth
-- **rvemu**: RISC-V emulator implementation
+- **rvemu**: RISC-V emulator implementation, a clone and modification of the [RISC-V emulator](https://github.com/r55-eth/rvemu)
 - **cargo-hybrid**: Command-line interface for development workflow
 
-## Contract Structure
+
+## Development Workflow
+
+1. **Create Project**: Use `cargo hybrid new` to scaffold a new contract
+2. **Implement Logic**: Write contract in `src/lib.rs` using Hybrid macros
+3. **Local Testing**: Use `cargo test` for unit tests
+4. **Build**: Compile with `cargo hybrid build`
+5. **Deploy**: Deploy with `cargo hybrid deploy`
+6. **Interact**: Use standard Ethereum tools for interaction
+
+### Contract Structure
 
 Hybrid contracts require specific project structure:
 
@@ -158,113 +196,16 @@ my_contract/
     └── my_contract.bin
 ```
 
-### Required Cargo.toml Configuration
+## Acknowledgments
 
-```toml
-[package]
-name = "my_contract"
-version = "0.1.0"
-edition = "2021"
+This project was inspired by and builds upon the work of the r55 team. The `hybrid_evm` crate and parts of the VM implementation were adapted from the r55 project, with modifications to support our hybrid execution environment.
 
-[features]
-default = []
-deploy = []
-interface-only = []
+- **r55 Project**: [https://github.com/r55-eth/r55](https://github.com/r55-eth/r55)
 
-[dependencies]
-hybrid-derive = { path = "path/to/hybrid-derive" }
-hybrid-contract = { path = "path/to/hybrid-contract" }
-alloy-core = { version = "0.8.20", default-features = false }
-
-[[bin]]
-name = "runtime"
-path = "src/lib.rs"
-
-[[bin]]
-name = "deploy"
-path = "src/lib.rs"
-required-features = ["deploy"]
-
-[profile.release]
-lto = true
-opt-level = "z"
-```
-
-## Development Workflow
-
-1. **Create Project**: Use `cargo hybrid new` to scaffold a new contract
-2. **Implement Logic**: Write contract in `src/lib.rs` using Hybrid macros
-3. **Local Testing**: Use `cargo test` for unit tests
-4. **Build**: Compile with `cargo hybrid build`
-5. **Deploy**: Deploy with `cargo hybrid deploy`
-6. **Interact**: Use standard Ethereum tools for interaction
-
-## Integration with Ethereum Tooling
-
-Hybrid contracts are fully compatible with the Ethereum ecosystem:
-
-### Web3 Libraries
-```javascript
-// Standard web3.js/ethers.js interaction
-const contract = new ethers.Contract(address, abi, provider);
-const result = await contract.transfer(recipient, amount);
-```
-
-### Hardhat Integration
-```javascript
-// hardhat.config.js
-module.exports = {
-  networks: {
-    hybrid: {
-      url: "http://127.0.0.1:8545", // Hybrid node URL
-      chainId: 1337
-    }
-  }
-};
-```
-
-### Foundry Support
-```bash
-# Standard forge commands work with deployed contracts
-forge test --rpc-url http://127.0.0.1:8545
-```
-
-## Performance
-
-- **Compilation**: ~10-30 seconds for typical contracts
-- **Execution**: ~10-100x slower than native EVM (due to RISC-V emulation)
-- **Gas Usage**: Higher gas consumption due to emulation overhead
-- **Binary Size**: ~10-50KB for typical contracts
-
-## Examples
-
-The `contracts/` directory contains example implementations:
-
-- **ERC20**: Standard fungible token implementation
-- **Storage**: Basic storage operations and patterns
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
+Special thanks to the r55 team for their pioneering work in bringing RISC-V execution to the Ethereum ecosystem.
 
 ## License
 
-MIT License - see LICENSE file for details
-
-## Documentation
-
-For detailed architecture information, see [ARCHITECTURE.md](crates/ARCHITECTURE.md).
-
-## Support
-
-- **GitHub Issues**: Bug reports and feature requests
-- **Documentation**: Architecture and API documentation
-- **Examples**: Sample contracts in `contracts/` directory
-
----
+[MIT License](LICENSE)
 
 **Note**: This is experimental technology. Use with caution in production environments.

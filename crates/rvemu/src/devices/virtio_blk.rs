@@ -260,7 +260,7 @@ impl VirtqAvail {
             ring_start_addr: addr.wrapping_add(4),
         })
     }
-    
+
     pub fn flags(&self) -> u16 {
         self.flags
     }

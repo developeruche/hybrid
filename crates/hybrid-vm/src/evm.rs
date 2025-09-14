@@ -186,8 +186,8 @@ impl<CTX, INSP> HybridEvm<CTX, INSP> {
 
 #[cfg(test)]
 mod tests {
-    use rvemu::bus::DRAM_BASE;
     use super::*;
+    use rvemu::bus::DRAM_BASE;
 
     #[test]
     fn test_mini_interpreter_emulator() {
