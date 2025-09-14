@@ -95,9 +95,14 @@ where
         tx.value = context.tx().value();
 
         let emu_input = serialize_input(&interpreter, &block, &tx);
-
+        
+        #[cfg(test)]
         let mini_evm_bin: &[u8] = include_bytes!("../../../bins/mini-evm-interpreter/target/riscv64imac-unknown-none-elf/release/runtime");
 
+        #[cfg(not(test))]
+        let mini_evm_bin: &[u8] = include_bytes!("../mini-evm-interpreter");
+
+        
         let mut emulator = match setup_from_mini_elf(mini_evm_bin, &emu_input) {
             Ok(emulator) => emulator,
             Err(err) => {
