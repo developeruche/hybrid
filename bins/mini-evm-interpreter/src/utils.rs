@@ -3,12 +3,11 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::arch::asm;
-use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
 use ext_revm::{
     context::{BlockEnv, TxEnv},
     interpreter::{Interpreter, InterpreterAction},
 };
-
+use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
 
 pub fn read_input() -> Result<(Interpreter, BlockEnv, TxEnv), String> {
     let input = copy_from_mem();
@@ -16,7 +15,6 @@ pub fn read_input() -> Result<(Interpreter, BlockEnv, TxEnv), String> {
 
     Ok(interpreter_n_context)
 }
-
 
 pub unsafe fn debug_println() {
     let address = CALLDATA_ADDRESS + (1024 * 1024 * 1024) - 2000;
@@ -31,7 +29,12 @@ pub unsafe fn debug_println_dyn_data(data: &[u8]) {
     dest.copy_from_slice(data);
 }
 
-pub fn write_output(interpreter: &Interpreter, block: &BlockEnv, tx: &TxEnv, out: &InterpreterAction) {
+pub fn write_output(
+    interpreter: &Interpreter,
+    block: &BlockEnv,
+    tx: &TxEnv,
+    out: &InterpreterAction,
+) {
     let serialized = serialize_output(interpreter, block, tx, out);
     let length = serialized.len() as u64;
 
@@ -58,8 +61,6 @@ pub unsafe fn write_to_memory(address: usize, data: &[u8]) {
     let dest = slice_from_raw_parts_mut(address, data.len());
     dest.copy_from_slice(data);
 }
-
-
 
 pub fn deserialize_input(data: &[u8]) -> (Interpreter, BlockEnv, TxEnv) {
     // Check minimum length for headers (16 bytes for two u64 lengths)

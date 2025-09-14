@@ -6,9 +6,10 @@ extern crate alloc;
 mod instruction_table;
 mod utils;
 
-
 use ext_revm::{
-    context::{CfgEnv, JournalTr}, database::EmptyDB, Context, Journal
+    context::{CfgEnv, JournalTr},
+    database::EmptyDB,
+    Context, Journal,
 };
 
 use crate::{
@@ -25,17 +26,17 @@ fn main() -> ! {
     let mut interpreter = input.0;
     let block = input.1;
     let tx = input.2;
-    
+
     let mut cfg = CfgEnv::new();
     cfg = cfg.with_chain_id(CHAIN_ID);
-    
+
     let mut context: Context = Context {
         block: block.clone(),
         cfg,
         chain: (),
         journaled_state: Journal::new(EmptyDB::default()),
         error: Ok(()),
-        tx: tx.clone()
+        tx: tx.clone(),
     };
 
     let out = interpreter.run_plain(&mini_instruction_table(), &mut context);
