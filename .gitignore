@@ -2,3 +2,7 @@ target
 
 rvemu.dts
 rvemu.dtb
+
+node_modules
+
+.DS_Store
