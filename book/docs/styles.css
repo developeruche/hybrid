@@ -73,11 +73,3 @@
         transform: translateY(-10px);
     }
 }
-
-/* Mobile responsiveness */
-@media (max-width: 768px) {
-    .zisk-logo {
-        width: 4rem;
-        height: 4rem;
-    }
-}
