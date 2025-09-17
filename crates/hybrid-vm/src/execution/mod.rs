@@ -18,7 +18,7 @@ use reth::{
 use rvemu::{emulator::Emulator, exception::Exception};
 
 use crate::{
-    execution::helper::{dram_slice, execute_call, execute_create, r55_gas_used},
+    execution::helper::{dram_slice, execute_call, execute_create, hybrid_gas_used},
     syscall_gas,
 };
 
@@ -72,7 +72,7 @@ where
                         let ret_offset: u64 = emu.cpu.xregs.read(10);
                         let ret_size: u64 = emu.cpu.xregs.read(11);
 
-                        let r55_gas = r55_gas_used(&emu.cpu.inst_counter);
+                        let r55_gas = hybrid_gas_used(&emu.cpu.inst_counter);
 
                         // RETURN logs the gas of the whole risc-v instruction set
                         syscall_gas!(interpreter, r55_gas);
@@ -341,7 +341,7 @@ where
             }
             Err(e) => {
                 println!("Error On Execute: {:?}", e);
-                syscall_gas!(interpreter, r55_gas_used(&emu.cpu.inst_counter));
+                syscall_gas!(interpreter, hybrid_gas_used(&emu.cpu.inst_counter));
                 return return_revert(interpreter, interpreter.control.gas.spent());
             }
         }

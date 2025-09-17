@@ -18,7 +18,7 @@ use crate::{
     syscall_gas,
 };
 
-pub fn r55_gas_used(inst_count: &BTreeMap<String, u64>) -> u64 {
+pub fn hybrid_gas_used(inst_count: &BTreeMap<String, u64>) -> u64 {
     let total_cost = inst_count
         .iter()
         .map(|(inst_name, count)|
