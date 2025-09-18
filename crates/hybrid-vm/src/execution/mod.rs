@@ -68,25 +68,150 @@ where
                 };
 
                 match syscall {
-                    Syscall::Return => {
+                    Syscall::Keccak256 => {
                         let ret_offset: u64 = emu.cpu.xregs.read(10);
                         let ret_size: u64 = emu.cpu.xregs.read(11);
-
-                        let r55_gas = hybrid_gas_used(&emu.cpu.inst_counter);
-
-                        // RETURN logs the gas of the whole risc-v instruction set
-                        syscall_gas!(interpreter, r55_gas);
-
                         let data_bytes = dram_slice(emu, ret_offset, ret_size)?;
 
-                        return Ok(InterpreterAction::Return {
-                            result: InterpreterResult {
-                                result: InstructionResult::Return,
-                                output: data_bytes.to_vec().into(),
-                                gas: interpreter.control.gas, // FIXME: gas is not correct
-                            },
-                        });
+                        let mut hasher = Keccak256::new();
+                        hasher.update(data_bytes);
+                        let hash: U256 = hasher.finalize().into();
+
+                        let limbs = hash.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
                     }
+                    Syscall::Balance => {}
+                    Syscall::Origin => {
+                        // Syscall::Origin
+                        let origin = host.tx().caller();
+                        // Break address into 3 u64s and write to registers
+                        let origin_bytes = origin.as_slice();
+
+                        let first_u64 = u64::from_be_bytes(origin_bytes[0..8].try_into().unwrap());
+                        emu.cpu.xregs.write(10, first_u64);
+
+                        let second_u64 =
+                            u64::from_be_bytes(origin_bytes[8..16].try_into().unwrap());
+                        emu.cpu.xregs.write(11, second_u64);
+
+                        let mut padded_bytes = [0u8; 8];
+                        padded_bytes[..4].copy_from_slice(&origin_bytes[16..20]);
+                        let third_u64 = u64::from_be_bytes(padded_bytes);
+                        emu.cpu.xregs.write(12, third_u64);
+                    }
+                    Syscall::Caller => {
+                        let caller = interpreter.input.caller_address;
+                        // Break address into 3 u64s and write to registers
+                        let caller_bytes = caller.as_slice();
+                        let first_u64 = u64::from_be_bytes(
+                            caller_bytes[0..8]
+                                .try_into()
+                                .map_err(|_| "Error converting caller address to u64")?,
+                        );
+                        emu.cpu.xregs.write(10, first_u64);
+                        let second_u64 = u64::from_be_bytes(
+                            caller_bytes[8..16]
+                                .try_into()
+                                .map_err(|_| "Error converting caller address to u64")?,
+                        );
+                        emu.cpu.xregs.write(11, second_u64);
+                        let mut padded_bytes = [0u8; 8];
+                        padded_bytes[..4].copy_from_slice(&caller_bytes[16..20]);
+                        let third_u64 = u64::from_be_bytes(padded_bytes);
+                        emu.cpu.xregs.write(12, third_u64);
+                    }
+                    Syscall::CallValue => {
+                        let value = interpreter.input.call_value;
+                        let limbs = value.into_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::CallDataLoad => {}
+                    Syscall::CallDataSize => {}
+                    Syscall::CallDataCopy => {}
+                    Syscall::CodeSize => {}
+                    Syscall::CodeCopy => {}
+                    Syscall::GasPrice => {
+                        let value = host.tx().gas_price();
+                        let limbs = U256::from(value);
+                        let limbs = limbs.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::ExtCodeSize => {}
+                    Syscall::ExtCodeCopy => {}
+                    Syscall::ReturnDataSize => {
+                        let size = interpreter.return_data.buffer().len();
+                        emu.cpu.xregs.write(10, size as u64);
+                    }
+                    Syscall::ReturnDataCopy => {
+                        let dest_offset = emu.cpu.xregs.read(10);
+                        let offset = emu.cpu.xregs.read(11) as usize;
+                        let size = emu.cpu.xregs.read(12) as usize;
+                        let data = &interpreter.return_data.buffer()[offset..offset + size];
+
+                        // write return data to memory
+                        let return_memory = emu
+                            .cpu
+                            .bus
+                            .get_dram_slice(dest_offset..(dest_offset + size as u64))
+                            .map_err(|_| "Failed to get DRAM slice".to_string())?;
+                        return_memory.copy_from_slice(data);
+                    }
+                    Syscall::ExtCodeHash => {}
+                    Syscall::BlockHash => {}
+                    Syscall::Coinbase => {}
+                    Syscall::Timestamp => {
+                        let timestamp = host.timestamp();
+                        let limbs = timestamp.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::Number => {
+                        let number = host.block_number();
+                        let limbs = U256::from(number);
+                        let limbs = limbs.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::Prevrandao => {}
+                    Syscall::GasLimit => {
+                        let limit = host.gas_limit();
+                        let limbs = limit.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::ChainId => {
+                        let value = host.chain_id();
+                        let value = value.as_le_bytes();
+                        let mut arr = [0u8; 8];
+                        arr.copy_from_slice(&value[..]);
+                        emu.cpu.xregs.write(10, u64::from_le_bytes(arr));
+                    }
+                    Syscall::SelfBalance => {}
+                    Syscall::BaseFee => {
+                        let value = host.basefee();
+                        let limbs = value.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::BlobHash => {}
+                    Syscall::BlobBaseFee => {}
                     Syscall::SLoad => {
                         let key1: u64 = emu.cpu.xregs.read(10);
                         let key2: u64 = emu.cpu.xregs.read(11);
@@ -140,38 +265,28 @@ where
                             );
                         }
                     }
-                    Syscall::ReturnDataSize => {
-                        let size = interpreter.return_data.buffer().len();
-                        emu.cpu.xregs.write(10, size as u64);
-                    }
-                    Syscall::ReturnDataCopy => {
-                        let dest_offset = emu.cpu.xregs.read(10);
-                        let offset = emu.cpu.xregs.read(11) as usize;
-                        let size = emu.cpu.xregs.read(12) as usize;
-                        let data = &interpreter.return_data.buffer()[offset..offset + size];
-
-                        // write return data to memory
-                        let return_memory = emu
-                            .cpu
-                            .bus
-                            .get_dram_slice(dest_offset..(dest_offset + size as u64))
-                            .map_err(|_| "Failed to get DRAM slice".to_string())?;
-                        return_memory.copy_from_slice(data);
-                    }
+                    Syscall::Gas => {}
+                    Syscall::Create => return execute_create(emu, interpreter, host),
                     Syscall::Call => return execute_call(emu, interpreter, host, false),
                     Syscall::StaticCall => return execute_call(emu, interpreter, host, true),
-                    Syscall::Create => return execute_create(emu, interpreter, host),
-                    Syscall::ReturnCreateAddress => {
-                        let dest_offset = emu.cpu.xregs.read(10);
-                        let addr = last_created_contract.unwrap_or_default();
+                    Syscall::Return => {
+                        let ret_offset: u64 = emu.cpu.xregs.read(10);
+                        let ret_size: u64 = emu.cpu.xregs.read(11);
 
-                        // write return data to memory
-                        let return_memory = emu
-                            .cpu
-                            .bus
-                            .get_dram_slice(dest_offset..(dest_offset + 20_u64))
-                            .map_err(|_| "Failed to get DRAM slice".to_string())?;
-                        return_memory.copy_from_slice(addr.as_slice());
+                        let r55_gas = hybrid_gas_used(&emu.cpu.inst_counter);
+
+                        // RETURN logs the gas of the whole risc-v instruction set
+                        syscall_gas!(interpreter, r55_gas);
+
+                        let data_bytes = dram_slice(emu, ret_offset, ret_size)?;
+
+                        return Ok(InterpreterAction::Return {
+                            result: InterpreterResult {
+                                result: InstructionResult::Return,
+                                output: data_bytes.to_vec().into(),
+                                gas: interpreter.control.gas, // FIXME: gas is not correct
+                            },
+                        });
                     }
                     Syscall::Revert => {
                         let ret_offset: u64 = emu.cpu.xregs.read(10);
@@ -186,117 +301,7 @@ where
                             },
                         });
                     }
-                    Syscall::Caller => {
-                        let caller = interpreter.input.caller_address;
-                        // Break address into 3 u64s and write to registers
-                        let caller_bytes = caller.as_slice();
-                        let first_u64 = u64::from_be_bytes(
-                            caller_bytes[0..8]
-                                .try_into()
-                                .map_err(|_| "Error converting caller address to u64")?,
-                        );
-                        emu.cpu.xregs.write(10, first_u64);
-                        let second_u64 = u64::from_be_bytes(
-                            caller_bytes[8..16]
-                                .try_into()
-                                .map_err(|_| "Error converting caller address to u64")?,
-                        );
-                        emu.cpu.xregs.write(11, second_u64);
-                        let mut padded_bytes = [0u8; 8];
-                        padded_bytes[..4].copy_from_slice(&caller_bytes[16..20]);
-                        let third_u64 = u64::from_be_bytes(padded_bytes);
-                        emu.cpu.xregs.write(12, third_u64);
-                    }
-                    Syscall::Keccak256 => {
-                        let ret_offset: u64 = emu.cpu.xregs.read(10);
-                        let ret_size: u64 = emu.cpu.xregs.read(11);
-                        let data_bytes = dram_slice(emu, ret_offset, ret_size)?;
-
-                        let mut hasher = Keccak256::new();
-                        hasher.update(data_bytes);
-                        let hash: U256 = hasher.finalize().into();
-
-                        let limbs = hash.as_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::CallValue => {
-                        let value = interpreter.input.call_value;
-                        let limbs = value.into_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::BaseFee => {
-                        let value = host.basefee();
-                        let limbs = value.as_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::ChainId => {
-                        let value = host.chain_id();
-                        let value = value.as_le_bytes();
-                        let mut arr = [0u8; 8];
-                        arr.copy_from_slice(&value[..]);
-                        emu.cpu.xregs.write(10, u64::from_le_bytes(arr));
-                    }
-                    Syscall::GasLimit => {
-                        let limit = host.gas_limit();
-                        let limbs = limit.as_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::Number => {
-                        let number = host.block_number();
-                        let limbs = U256::from(number);
-                        let limbs = limbs.as_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::Timestamp => {
-                        let timestamp = host.timestamp();
-                        let limbs = timestamp.as_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::GasPrice => {
-                        let value = host.tx().gas_price();
-                        let limbs = U256::from(value);
-                        let limbs = limbs.as_limbs();
-                        emu.cpu.xregs.write(10, limbs[0]);
-                        emu.cpu.xregs.write(11, limbs[1]);
-                        emu.cpu.xregs.write(12, limbs[2]);
-                        emu.cpu.xregs.write(13, limbs[3]);
-                    }
-                    Syscall::Origin => {
-                        // Syscall::Origin
-                        let origin = host.tx().caller();
-                        // Break address into 3 u64s and write to registers
-                        let origin_bytes = origin.as_slice();
-
-                        let first_u64 = u64::from_be_bytes(origin_bytes[0..8].try_into().unwrap());
-                        emu.cpu.xregs.write(10, first_u64);
-
-                        let second_u64 =
-                            u64::from_be_bytes(origin_bytes[8..16].try_into().unwrap());
-                        emu.cpu.xregs.write(11, second_u64);
-
-                        let mut padded_bytes = [0u8; 8];
-                        padded_bytes[..4].copy_from_slice(&origin_bytes[16..20]);
-                        let third_u64 = u64::from_be_bytes(padded_bytes);
-                        emu.cpu.xregs.write(12, third_u64);
-                    }
+                    Syscall::DelegateCall => {}
                     Syscall::Log => {
                         let data_ptr: u64 = emu.cpu.xregs.read(10);
                         let data_size: u64 = emu.cpu.xregs.read(11);
@@ -333,6 +338,18 @@ where
                             topics,
                             data.into(),
                         ));
+                    }
+                    Syscall::ReturnCreateAddress => {
+                        let dest_offset = emu.cpu.xregs.read(10);
+                        let addr = last_created_contract.unwrap_or_default();
+
+                        // write return data to memory
+                        let return_memory = emu
+                            .cpu
+                            .bus
+                            .get_dram_slice(dest_offset..(dest_offset + 20_u64))
+                            .map_err(|_| "Failed to get DRAM slice".to_string())?;
+                        return_memory.copy_from_slice(addr.as_slice());
                     }
                 }
             }
