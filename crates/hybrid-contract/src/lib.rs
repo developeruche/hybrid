@@ -423,7 +423,7 @@ pub fn msg_sender() -> Address {
     let mut bytes = [0u8; 20];
     bytes[0..8].copy_from_slice(&first.to_be_bytes());
     bytes[8..16].copy_from_slice(&second.to_be_bytes());
-    bytes[16..20].copy_from_slice(&third.to_be_bytes()[..4]);
+    bytes[16..20].copy_from_slice(&third.to_be_bytes()[4..]);
     Address::from_slice(&bytes)
 }
 

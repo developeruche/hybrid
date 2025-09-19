@@ -77,45 +77,42 @@ macro_rules! syscalls {
 syscalls!(
     // EVM opcodes
     (0x20, Keccak256, "keccak256"),
+    (0x31, Balance, "balance"),
     (0x32, Origin, "origin"),
     (0x33, Caller, "caller"),
     (0x34, CallValue, "callvalue"),
+    (0x35, CallDataLoad, "calldataload"),
+    (0x36, CallDataSize, "calldatasize"),
+    (0x37, CallDataCopy, "calldatacopy"),
+    (0x38, CodeSize, "codesize"),
+    (0x39, CodeCopy, "codecopy"),
     (0x3A, GasPrice, "gasprice"),
+    (0x3B, ExtCodeSize, "extcodesize"),
+    (0x3C, ExtCodeCopy, "extcodecopy"),
     (0x3D, ReturnDataSize, "returndatasize"),
     (0x3E, ReturnDataCopy, "returndatacopy"),
+    (0x3F, ExtCodeHash, "extcodehash"),
+    (0x40, BlockHash, "blockhash"),
+    (0x41, Coinbase, "coinbase"),
     (0x42, Timestamp, "timestamp"),
     (0x43, Number, "number"),
+    (0x44, Prevrandao, "prevrandao"),
     (0x45, GasLimit, "gaslimit"),
     (0x46, ChainId, "chainid"),
+    (0x47, SelfBalance, "selfbalance"),
     (0x48, BaseFee, "basefee"),
+    (0x49, BlobHash, "blobhash"),
+    (0x4A, BlobBaseFee, "blobbasefee"),
     (0x54, SLoad, "sload"),
     (0x55, SStore, "sstore"),
-    (0xf0, Create, "create"),
-    (0xf1, Call, "call"),
-    (0xfa, StaticCall, "staticcall"),
-    (0xf3, Return, "return"),
-    (0xfd, Revert, "revert"),
+    (0x5A, Gas, "gas"),
+    (0xF0, Create, "create"),
+    (0xF1, Call, "call"),
+    (0xFA, StaticCall, "staticcall"),
+    (0xF3, Return, "return"),
+    (0xFD, Revert, "revert"),
+    (0xF4, DelegateCall, "delegatecall"),
     (0xA0, Log, "log"),
     // R55 exceptions
     (0x01, ReturnCreateAddress, "returncreateaddress"),
 );
-
-// Here are some opcodes that are not implemented yet;
-// 1. balance
-// 2. calldataload
-// 3. calldatasize
-// 4. calldatacopy
-// 5. codesize
-// 6. codecopy
-// 7. extcodesize
-// 8. extcodecopy
-// 9. extcodehash
-// 10. blockhash
-// 11. coinbase
-// 12. prevrandao
-// 13. selfbalance
-// 14. basefee
-// 15. blobhash
-// 16. blobbasefee
-// 17. gas
-// 18. delegatecall
