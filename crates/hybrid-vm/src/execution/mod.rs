@@ -16,9 +16,13 @@ use reth::{
     },
 };
 use rvemu::{emulator::Emulator, exception::Exception};
+pub mod utils;
 
 use crate::{
-    execution::helper::{dram_slice, execute_call, execute_create, hybrid_gas_used},
+    execution::{
+        helper::{dram_slice, execute_call, execute_create, hybrid_gas_used},
+        utils::__3u64_to_address,
+    },
     syscall_gas,
 };
 
@@ -83,7 +87,34 @@ where
                         emu.cpu.xregs.write(12, limbs[2]);
                         emu.cpu.xregs.write(13, limbs[3]);
                     }
-                    Syscall::Balance => {}
+                    Syscall::Balance => {
+                        let address_1 = emu.cpu.xregs.read(10);
+                        let address_2 = emu.cpu.xregs.read(11);
+                        let address_3 = emu.cpu.xregs.read(12);
+
+                        let address = __3u64_to_address(address_1, address_2, address_3);
+
+                        match host.balance(address) {
+                            Some(state_load) => {
+                                let limbs = state_load.data.as_limbs();
+                                emu.cpu.xregs.write(10, limbs[0]);
+                                emu.cpu.xregs.write(11, limbs[1]);
+                                emu.cpu.xregs.write(12, limbs[2]);
+                                emu.cpu.xregs.write(13, limbs[3]);
+                                syscall_gas!(
+                                    interpreter,
+                                    if state_load.is_cold {
+                                        gas::CALL_NEW_ACCOUNT
+                                    } else {
+                                        gas::CALL_BASE
+                                    }
+                                );
+                            }
+                            _ => {
+                                return return_revert(interpreter, interpreter.control.gas.spent());
+                            }
+                        }
+                    }
                     Syscall::Origin => {
                         // Syscall::Origin
                         let origin = host.tx().caller();
@@ -131,7 +162,9 @@ where
                         emu.cpu.xregs.write(12, limbs[2]);
                         emu.cpu.xregs.write(13, limbs[3]);
                     }
-                    Syscall::CallDataLoad => {}
+                    Syscall::CallDataLoad => {
+                        // There is already an api for doing this from the frontend (hybrid-contract)
+                    }
                     Syscall::CallDataSize => {}
                     Syscall::CallDataCopy => {}
                     Syscall::CodeSize => {}
@@ -167,7 +200,26 @@ where
                     }
                     Syscall::ExtCodeHash => {}
                     Syscall::BlockHash => {}
-                    Syscall::Coinbase => {}
+                    Syscall::Coinbase => {
+                        let coinbase = host.beneficiary();
+                        let limbs = coinbase.as_slice();
+                        let first_u64 = u64::from_be_bytes(
+                            limbs[0..8]
+                                .try_into()
+                                .map_err(|_| "Error converting caller address to u64")?,
+                        );
+                        emu.cpu.xregs.write(10, first_u64);
+                        let second_u64 = u64::from_be_bytes(
+                            limbs[8..16]
+                                .try_into()
+                                .map_err(|_| "Error converting caller address to u64")?,
+                        );
+                        emu.cpu.xregs.write(11, second_u64);
+                        let mut padded_bytes = [0u8; 8];
+                        padded_bytes[..4].copy_from_slice(&limbs[16..20]);
+                        let third_u64 = u64::from_be_bytes(padded_bytes);
+                        emu.cpu.xregs.write(12, third_u64);
+                    }
                     Syscall::Timestamp => {
                         let timestamp = host.timestamp();
                         let limbs = timestamp.as_limbs();
@@ -185,7 +237,14 @@ where
                         emu.cpu.xregs.write(12, limbs[2]);
                         emu.cpu.xregs.write(13, limbs[3]);
                     }
-                    Syscall::Prevrandao => {}
+                    Syscall::Prevrandao => {
+                        let prevrandao = host.prevrandao().unwrap_or_default();
+                        let limbs = prevrandao.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
                     Syscall::GasLimit => {
                         let limit = host.gas_limit();
                         let limbs = limit.as_limbs();
@@ -201,7 +260,29 @@ where
                         arr.copy_from_slice(&value[..]);
                         emu.cpu.xregs.write(10, u64::from_le_bytes(arr));
                     }
-                    Syscall::SelfBalance => {}
+                    Syscall::SelfBalance => {
+                        let address = interpreter.input.caller_address;
+                        match host.balance(address) {
+                            Some(state_load) => {
+                                let limbs = state_load.data.as_limbs();
+                                emu.cpu.xregs.write(10, limbs[0]);
+                                emu.cpu.xregs.write(11, limbs[1]);
+                                emu.cpu.xregs.write(12, limbs[2]);
+                                emu.cpu.xregs.write(13, limbs[3]);
+                                syscall_gas!(
+                                    interpreter,
+                                    if state_load.is_cold {
+                                        gas::CALL_NEW_ACCOUNT
+                                    } else {
+                                        gas::CALL_BASE
+                                    }
+                                );
+                            }
+                            _ => {
+                                return return_revert(interpreter, interpreter.control.gas.spent());
+                            }
+                        }
+                    }
                     Syscall::BaseFee => {
                         let value = host.basefee();
                         let limbs = value.as_limbs();
@@ -265,7 +346,14 @@ where
                             );
                         }
                     }
-                    Syscall::Gas => {}
+                    Syscall::Gas => {
+                        let gas = U256::from(interpreter.control.gas().remaining());
+                        let limbs = gas.as_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
                     Syscall::Create => return execute_create(emu, interpreter, host),
                     Syscall::Call => return execute_call(emu, interpreter, host, false),
                     Syscall::StaticCall => return execute_call(emu, interpreter, host, true),

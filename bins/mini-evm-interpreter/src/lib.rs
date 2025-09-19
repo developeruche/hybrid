@@ -50,6 +50,7 @@ extern crate alloc;
 
 mod instruction_table;
 mod utils;
+mod ext_syscalls;
 
 use ext_revm::{
     context::{CfgEnv, JournalTr},
