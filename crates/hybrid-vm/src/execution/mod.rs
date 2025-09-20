@@ -8,8 +8,9 @@ use reth::{
         context::{ContextTr, Transaction},
         handler::{instructions::InstructionProvider, EvmTr, PrecompileProvider},
         interpreter::{
+            as_usize_saturated,
             interpreter::EthInterpreter,
-            interpreter_types::{LoopControl, ReturnData},
+            interpreter_types::{InputsTr, LegacyBytecode, LoopControl, ReturnData},
             Host, InstructionResult, Interpreter, InterpreterAction, InterpreterResult,
         },
         primitives::{alloy_primitives::Keccak256, Address, Bytes, B256, U256},
@@ -17,6 +18,7 @@ use reth::{
 };
 use rvemu::{emulator::Emulator, exception::Exception};
 pub mod utils;
+use core::ptr;
 
 use crate::{
     execution::{
@@ -163,12 +165,57 @@ where
                         emu.cpu.xregs.write(13, limbs[3]);
                     }
                     Syscall::CallDataLoad => {
-                        // There is already an api for doing this from the frontend (hybrid-contract)
+                        let mut word = B256::ZERO;
+                        let mut offset_ptr = U256::ZERO;
+                        let offset = as_usize_saturated!(offset_ptr);
+                        let input = interpreter.input.input();
+                        let input_len = input.len();
+                        if offset < input_len {
+                            let count = 32.min(input_len - offset);
+                            // SAFETY: `count` is bounded by the calldata length.
+                            // This is `word[..count].copy_from_slice(input[offset..offset + count])`, written using
+                            // raw pointers as apparently the compiler cannot optimize the slice version, and using
+                            // `get_unchecked` twice is uglier.
+                            debug_assert!(count <= 32 && offset + count <= input_len);
+                            unsafe {
+                                ptr::copy_nonoverlapping(
+                                    input.as_ptr().add(offset),
+                                    word.as_mut_ptr(),
+                                    count,
+                                )
+                            };
+                        }
+                        offset_ptr = word.into();
+                        let limbs = offset_ptr.into_limbs();
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
                     }
-                    Syscall::CallDataSize => {}
-                    Syscall::CallDataCopy => {}
-                    Syscall::CodeSize => {}
-                    Syscall::CodeCopy => {}
+                    Syscall::CallDataSize => {
+                        let length = U256::from(interpreter.input.input().len());
+                        let limbs = length.into_limbs();
+
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::CallDataCopy => {
+                        // There is no need for this
+                    }
+                    Syscall::CodeSize => {
+                        let code_size = U256::from(interpreter.bytecode.bytecode_len());
+                        let limbs = code_size.into_limbs();
+
+                        emu.cpu.xregs.write(10, limbs[0]);
+                        emu.cpu.xregs.write(11, limbs[1]);
+                        emu.cpu.xregs.write(12, limbs[2]);
+                        emu.cpu.xregs.write(13, limbs[3]);
+                    }
+                    Syscall::CodeCopy => {
+                        // There is no need for this
+                    }
                     Syscall::GasPrice => {
                         let value = host.tx().gas_price();
                         let limbs = U256::from(value);
