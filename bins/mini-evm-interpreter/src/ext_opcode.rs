@@ -3,7 +3,8 @@ use ext_revm::interpreter::gas::{warm_cold_cost, CALL_STIPEND};
 use ext_revm::interpreter::instructions::utility::IntoU256;
 use ext_revm::interpreter::interpreter_types::InputsTr;
 use ext_revm::interpreter::{
-    as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push, require_non_staticcall, resize_memory
+    as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push,
+    require_non_staticcall, resize_memory,
 };
 use ext_revm::primitives::{BLOCK_HASH_HISTORY, U256};
 
@@ -20,7 +21,7 @@ use ext_revm::{
 
 use crate::ext_syscalls::{
     host_balance, host_block_hash, host_block_number, host_load_account_code,
-    host_load_account_code_hash, host_sload, host_sstore,
+    host_load_account_code_hash, host_sload, host_sstore, host_tload, host_tstore,
 };
 
 pub fn balance<WIRE: InterpreterTypes, H: Host + ?Sized>(
@@ -240,4 +241,27 @@ pub fn sstore<WIRE: InterpreterTypes, H: Host + ?Sized>(
             interpreter.runtime_flag.spec_id(),
             &state_load.data,
         ));
+}
+
+pub fn tload<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    gas!(interpreter, gas::WARM_STORAGE_READ_COST);
+
+    popn_top!([], index, interpreter);
+
+    *index = host_tload(interpreter.input.target_address(), *index);
+}
+
+pub fn tstore<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    require_non_staticcall!(interpreter);
+    gas!(interpreter, gas::WARM_STORAGE_READ_COST);
+
+    popn!([index, value], interpreter);
+
+    host_tstore(interpreter.input.target_address(), index, value);
 }

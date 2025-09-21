@@ -375,17 +375,11 @@ pub fn serialize_output(
     serialized
 }
 
-pub fn serialize_sstore_input(
-    address: Address, 
-    index: U256, 
-    value: U256
-) -> Vec<u8> {
-    let s_address =
-        bincode::serde::encode_to_vec(address, bincode::config::legacy()).unwrap();
+pub fn serialize_sstore_input(address: Address, index: U256, value: U256) -> Vec<u8> {
+    let s_address = bincode::serde::encode_to_vec(address, bincode::config::legacy()).unwrap();
     let s_index = bincode::serde::encode_to_vec(index, bincode::config::legacy()).unwrap();
     let s_value = bincode::serde::encode_to_vec(value, bincode::config::legacy()).unwrap();
 
-    
     let sa_len = s_address.len();
     let si_len = s_index.len();
     let sv_len = s_value.len();
@@ -395,7 +389,6 @@ pub fn serialize_sstore_input(
     serialized.extend((sa_len as u64).to_le_bytes());
     serialized.extend((si_len as u64).to_le_bytes());
     serialized.extend((sv_len as u64).to_le_bytes());
-
 
     serialized.extend(s_address);
     serialized.extend(s_index);
