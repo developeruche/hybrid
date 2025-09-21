@@ -30,6 +30,7 @@ use core::arch::asm;
 use ext_revm::{
     context::{BlockEnv, TxEnv},
     interpreter::{Interpreter, InterpreterAction},
+    primitives::Address,
 };
 use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
 
@@ -372,4 +373,22 @@ pub fn serialize_output(
     serialized.extend(s_out);
 
     serialized
+}
+
+pub fn __3u64_to_address(limb_one: u64, limb_two: u64, limb_three: u64) -> Address {
+    let mut bytes = [0u8; 20];
+    bytes[0..8].copy_from_slice(&limb_one.to_be_bytes());
+    bytes[8..16].copy_from_slice(&limb_two.to_be_bytes());
+    bytes[16..20].copy_from_slice(&limb_three.to_be_bytes()[4..]);
+    Address::from_slice(&bytes)
+}
+
+pub fn __address_to_3u64(address: Address) -> (u64, u64, u64) {
+    let bytes = address.0;
+    let limb_one = u64::from_be_bytes(bytes[0..8].try_into().unwrap());
+    let limb_two = u64::from_be_bytes(bytes[8..16].try_into().unwrap());
+    let mut buf = [0u8; 8];
+    buf[4..].copy_from_slice(&bytes[16..20]);
+    let limb_three = u64::from_be_bytes(buf);
+    (limb_one, limb_two, limb_three)
 }

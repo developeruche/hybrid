@@ -48,6 +48,7 @@
 
 extern crate alloc;
 
+mod constants;
 mod ext_opcode;
 mod ext_syscalls;
 mod instruction_table;
