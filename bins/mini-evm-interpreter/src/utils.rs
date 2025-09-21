@@ -30,7 +30,7 @@ use core::arch::asm;
 use ext_revm::{
     context::{BlockEnv, TxEnv},
     interpreter::{Interpreter, InterpreterAction},
-    primitives::Address,
+    primitives::{Address, U256},
 };
 use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut, CALLDATA_ADDRESS};
 
@@ -371,6 +371,35 @@ pub fn serialize_output(
     serialized.extend(s_block);
     serialized.extend(s_tx);
     serialized.extend(s_out);
+
+    serialized
+}
+
+pub fn serialize_sstore_input(
+    address: Address, 
+    index: U256, 
+    value: U256
+) -> Vec<u8> {
+    let s_address =
+        bincode::serde::encode_to_vec(address, bincode::config::legacy()).unwrap();
+    let s_index = bincode::serde::encode_to_vec(index, bincode::config::legacy()).unwrap();
+    let s_value = bincode::serde::encode_to_vec(value, bincode::config::legacy()).unwrap();
+
+    
+    let sa_len = s_address.len();
+    let si_len = s_index.len();
+    let sv_len = s_value.len();
+
+    let mut serialized = Vec::with_capacity(sa_len + si_len + sv_len + 24);
+
+    serialized.extend((sa_len as u64).to_le_bytes());
+    serialized.extend((si_len as u64).to_le_bytes());
+    serialized.extend((sv_len as u64).to_le_bytes());
+
+
+    serialized.extend(s_address);
+    serialized.extend(s_index);
+    serialized.extend(s_value);
 
     serialized
 }

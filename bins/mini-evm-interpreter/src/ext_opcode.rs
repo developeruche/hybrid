@@ -1,9 +1,9 @@
 use core::cmp::min;
-use ext_revm::interpreter::gas::warm_cold_cost;
+use ext_revm::interpreter::gas::{warm_cold_cost, CALL_STIPEND};
 use ext_revm::interpreter::instructions::utility::IntoU256;
 use ext_revm::interpreter::interpreter_types::InputsTr;
 use ext_revm::interpreter::{
-    as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push, resize_memory,
+    as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push, require_non_staticcall, resize_memory
 };
 use ext_revm::primitives::{BLOCK_HASH_HISTORY, U256};
 
@@ -20,7 +20,7 @@ use ext_revm::{
 
 use crate::ext_syscalls::{
     host_balance, host_block_hash, host_block_number, host_load_account_code,
-    host_load_account_code_hash, host_sload,
+    host_load_account_code_hash, host_sload, host_sstore,
 };
 
 pub fn balance<WIRE: InterpreterTypes, H: Host + ?Sized>(
@@ -198,4 +198,46 @@ pub fn sload<WIRE: InterpreterTypes, H: Host + ?Sized>(
         gas::sload_cost(interpreter.runtime_flag.spec_id(), value.is_cold)
     );
     *index = value.data;
+}
+
+pub fn sstore<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    require_non_staticcall!(interpreter);
+
+    popn!([index, value], interpreter);
+
+    let Some(state_load) = host_sstore(interpreter.input.target_address(), index, value) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+
+    // EIP-1706 Disable SSTORE with gasleft lower than call stipend
+    if interpreter.runtime_flag.spec_id().is_enabled_in(ISTANBUL)
+        && interpreter.control.gas().remaining() <= CALL_STIPEND
+    {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::ReentrancySentryOOG);
+        return;
+    }
+    gas!(
+        interpreter,
+        gas::sstore_cost(
+            interpreter.runtime_flag.spec_id(),
+            &state_load.data,
+            state_load.is_cold
+        )
+    );
+
+    interpreter
+        .control
+        .gas_mut()
+        .record_refund(gas::sstore_refund(
+            interpreter.runtime_flag.spec_id(),
+            &state_load.data,
+        ));
 }

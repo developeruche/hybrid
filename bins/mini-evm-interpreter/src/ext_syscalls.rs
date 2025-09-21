@@ -1,11 +1,12 @@
 use core::arch::asm;
 
-use crate::utils::__address_to_3u64;
+use crate::utils::{__address_to_3u64, serialize_sstore_input};
 use ext_revm::{
-    interpreter::StateLoad,
+    interpreter::{SStoreResult, StateLoad},
     primitives::{Address, Bytes, FixedBytes, B256, U256},
 };
 use hybrid_contract::slice_from_raw_parts;
+use serde::{Deserialize, Serialize};
 
 pub mod mini_evm_syscalls_ids {
     pub const HOST_BALANCE: u64 = 10;
@@ -14,6 +15,14 @@ pub mod mini_evm_syscalls_ids {
     pub const HOST_BLOCK_NUMBER: u64 = 13;
     pub const HOST_BLOCK_HASH: u64 = 14;
     pub const HOST_SLOAD: u64 = 15;
+    pub const HOST_SSTORE: u64 = 16;
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SStoreInput {
+    address: Address,
+    index: U256,
+    value: U256
 }
 
 /// Allocating the last 20MB of the address space for the mini-evm syscalls
@@ -158,5 +167,30 @@ pub fn host_sload(address: Address, key: U256) -> Option<StateLoad<U256>> {
             .unwrap()
             .0;
 
+    out
+}
+
+pub fn host_sstore(address: Address, index: U256, value: U256) -> Option<StateLoad<SStoreResult>> {
+    let input_serialized = serialize_sstore_input(address, index, value);
+    let input_size = input_serialized.len();
+    
+    let mut output_size;
+    
+    unsafe {
+        asm!(
+            "ecall",
+            in("a0") input_size,
+            lateout("a0") output_size,
+            in("t0") mini_evm_syscalls_ids::HOST_SSTORE
+        );
+    }
+    
+    let out_serialized = unsafe { slice_from_raw_parts(MINI_EVM_SYSCALLS_MEM_ADDR, output_size) };
+
+    let out: Option<StateLoad<SStoreResult>> =
+        bincode::serde::decode_from_slice(out_serialized, bincode::config::legacy())
+            .unwrap()
+            .0;
+    
     out
 }
