@@ -48,11 +48,11 @@
 
 extern crate alloc;
 
-mod constants;
-mod ext_opcode;
-mod ext_syscalls;
-mod instruction_table;
-mod utils;
+pub mod constants;
+pub mod ext_opcode;
+pub mod ext_syscalls;
+pub mod instruction_table;
+pub mod utils;
 
 use ext_revm::{
     context::{CfgEnv, JournalTr},
