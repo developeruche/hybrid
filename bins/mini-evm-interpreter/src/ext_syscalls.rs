@@ -13,6 +13,7 @@ pub mod mini_evm_syscalls_ids {
     pub const HOST_LOAD_ACCOUNT_CODE_HASH: u64 = 12;
     pub const HOST_BLOCK_NUMBER: u64 = 13;
     pub const HOST_BLOCK_HASH: u64 = 14;
+    pub const HOST_SLOAD: u64 = 15;
 }
 
 /// Allocating the last 20MB of the address space for the mini-evm syscalls
@@ -123,6 +124,36 @@ pub fn host_block_hash(block_number: u64) -> Option<B256> {
     let out_serialized = unsafe { slice_from_raw_parts(MINI_EVM_SYSCALLS_MEM_ADDR, size) };
 
     let out: Option<B256> =
+        bincode::serde::decode_from_slice(out_serialized, bincode::config::legacy())
+            .unwrap()
+            .0;
+
+    out
+}
+
+pub fn host_sload(address: Address, key: U256) -> Option<StateLoad<U256>> {
+    let (addr_limb_1, addr_limb_2, addr_limb_3) = __address_to_3u64(address);
+    let key_limbs = key.as_limbs();
+    let mut size;
+
+    unsafe {
+        asm!(
+            "ecall",
+            in("a0") addr_limb_1,
+            in("a1") addr_limb_2,
+            in("a2") addr_limb_3,
+            in("a3") key_limbs[0],
+            in("a4") key_limbs[1],
+            in("a5") key_limbs[2],
+            in("a6") key_limbs[3],
+            lateout("a0") size,
+            in("t0") mini_evm_syscalls_ids::HOST_SLOAD
+        );
+    }
+
+    let out_serialized = unsafe { slice_from_raw_parts(MINI_EVM_SYSCALLS_MEM_ADDR, size) };
+
+    let out: Option<StateLoad<U256>> =
         bincode::serde::decode_from_slice(out_serialized, bincode::config::legacy())
             .unwrap()
             .0;

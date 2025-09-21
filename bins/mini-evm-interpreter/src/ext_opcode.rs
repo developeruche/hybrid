@@ -1,5 +1,4 @@
 use core::cmp::min;
-
 use ext_revm::interpreter::gas::warm_cold_cost;
 use ext_revm::interpreter::instructions::utility::IntoU256;
 use ext_revm::interpreter::interpreter_types::InputsTr;
@@ -7,6 +6,7 @@ use ext_revm::interpreter::{
     as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push, resize_memory,
 };
 use ext_revm::primitives::{BLOCK_HASH_HISTORY, U256};
+
 /// This module contains the implementation of the EVM opcodes that need to interact with the host.
 use ext_revm::{
     interpreter::{
@@ -20,7 +20,7 @@ use ext_revm::{
 
 use crate::ext_syscalls::{
     host_balance, host_block_hash, host_block_number, host_load_account_code,
-    host_load_account_code_hash,
+    host_load_account_code_hash, host_sload,
 };
 
 pub fn balance<WIRE: InterpreterTypes, H: Host + ?Sized>(
@@ -178,4 +178,24 @@ pub fn selfbalance<WIRE: InterpreterTypes, H: Host + ?Sized>(
         return;
     };
     push!(interpreter, balance.data);
+}
+
+pub fn sload<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    popn_top!([], index, interpreter);
+
+    let Some(value) = host_sload(interpreter.input.target_address(), *index) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+
+    gas!(
+        interpreter,
+        gas::sload_cost(interpreter.runtime_flag.spec_id(), value.is_cold)
+    );
+    *index = value.data;
 }
