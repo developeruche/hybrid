@@ -17,7 +17,7 @@ hybrid-contract = { path = "../../crates/hybrid-contract"}
 alloy-core = { version = "0.8.20", default-features = false }
 alloy-sol-types = { version = "0.8.20", default-features = false }
 
-revm = { git = "https://github.com/developeruche/revm.git", default-features = false, branch = "hybrid-revm-v2", features = ["serde"]}
+
 serde = { version = "1.0", default-features = false }
 bincode = { version = "2.0", features = ["serde", "alloc"], default-features = false }
 
