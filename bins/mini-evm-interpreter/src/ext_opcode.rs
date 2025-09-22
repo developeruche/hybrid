@@ -1,12 +1,17 @@
-use core::cmp::min;
-use ext_revm::interpreter::gas::{warm_cold_cost, CALL_STIPEND};
-use ext_revm::interpreter::instructions::utility::IntoU256;
-use ext_revm::interpreter::interpreter_types::InputsTr;
-use ext_revm::interpreter::{
-    as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push,
-    require_non_staticcall, resize_memory,
+use alloc::boxed::Box;
+use core::cmp::{max, min};
+use ext_revm::interpreter::gas::{warm_cold_cost, CALL_STIPEND, MIN_CALLEE_GAS};
+use ext_revm::interpreter::instructions::contract::{
+    calc_call_gas, extcall_input, get_memory_input_and_out_ranges, pop_extcall_target_address,
 };
-use ext_revm::primitives::{BLOCK_HASH_HISTORY, U256};
+use ext_revm::interpreter::instructions::utility::IntoU256;
+use ext_revm::interpreter::interpreter_types::{InputsTr, ReturnData};
+use ext_revm::interpreter::{
+    as_u64_saturated, as_usize_or_fail, as_usize_saturated, gas_or_fail, popn, push, require_eof,
+    require_non_staticcall, resize_memory, CallInputs, CallScheme, CallValue, FrameInput,
+    InterpreterAction,
+};
+use ext_revm::primitives::{Address, B256, BLOCK_HASH_HISTORY, U256};
 
 /// This module contains the implementation of the EVM opcodes that need to interact with the host.
 use ext_revm::{
@@ -21,7 +26,8 @@ use ext_revm::{
 
 use crate::ext_syscalls::{
     host_balance, host_block_hash, host_block_number, host_load_account_code,
-    host_load_account_code_hash, host_sload, host_sstore, host_tload, host_tstore,
+    host_load_account_code_hash, host_load_account_delegated, host_sload, host_sstore, host_tload,
+    host_tstore,
 };
 
 pub fn balance<WIRE: InterpreterTypes, H: Host + ?Sized>(
@@ -264,4 +270,378 @@ pub fn tstore<WIRE: InterpreterTypes, H: Host + ?Sized>(
     popn!([index, value], interpreter);
 
     host_tstore(interpreter.input.target_address(), index, value);
+}
+
+pub fn call<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    popn!([local_gas_limit, to, value], interpreter);
+    let to = to.into_address();
+    // Max gas limit is not possible in real ethereum situation.
+    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+
+    let has_transfer = !value.is_zero();
+    if interpreter.runtime_flag.is_static() && has_transfer {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::CallNotAllowedInsideStatic);
+        return;
+    }
+
+    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
+        return;
+    };
+
+    let Some(account_load) = host_load_account_delegated(to) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+
+    let Some(mut gas_limit) =
+        calc_call_gas(interpreter, account_load, has_transfer, local_gas_limit)
+    else {
+        return;
+    };
+
+    gas!(interpreter, gas_limit);
+
+    // Add call stipend if there is value to be transferred.
+    if has_transfer {
+        gas_limit = gas_limit.saturating_add(gas::CALL_STIPEND);
+    }
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address: to,
+            caller: interpreter.input.target_address(),
+            bytecode_address: to,
+            value: CallValue::Transfer(value),
+            scheme: CallScheme::Call,
+            is_static: interpreter.runtime_flag.is_static(),
+            is_eof: false,
+            return_memory_offset,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
+}
+
+pub fn call_code<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    popn!([local_gas_limit, to, value], interpreter);
+    let to = Address::from_word(B256::from(to));
+    // Max gas limit is not possible in real ethereum situation.
+    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+
+    //pop!(interpreter, value);
+    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
+        return;
+    };
+
+    let Some(mut load) = host_load_account_delegated(to) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+
+    // Set `is_empty` to false as we are not creating this account.
+    load.is_empty = false;
+    let Some(mut gas_limit) = calc_call_gas(interpreter, load, !value.is_zero(), local_gas_limit)
+    else {
+        return;
+    };
+
+    gas!(interpreter, gas_limit);
+
+    // Add call stipend if there is value to be transferred.
+    if !value.is_zero() {
+        gas_limit = gas_limit.saturating_add(gas::CALL_STIPEND);
+    }
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address: interpreter.input.target_address(),
+            caller: interpreter.input.target_address(),
+            bytecode_address: to,
+            value: CallValue::Transfer(value),
+            scheme: CallScheme::CallCode,
+            is_static: interpreter.runtime_flag.is_static(),
+            is_eof: false,
+            return_memory_offset,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
+}
+
+pub fn delegate_call<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    popn!([local_gas_limit, to], interpreter);
+    let to = Address::from_word(B256::from(to));
+    // Max gas limit is not possible in real ethereum situation.
+    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+
+    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
+        return;
+    };
+
+    let Some(mut load) = host_load_account_delegated(to) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+
+    // Set is_empty to false as we are not creating this account.
+    load.is_empty = false;
+    let Some(gas_limit) = calc_call_gas(interpreter, load, false, local_gas_limit) else {
+        return;
+    };
+
+    gas!(interpreter, gas_limit);
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address: interpreter.input.target_address(),
+            caller: interpreter.input.caller_address(),
+            bytecode_address: to,
+            value: CallValue::Apparent(interpreter.input.call_value()),
+            scheme: CallScheme::DelegateCall,
+            is_static: interpreter.runtime_flag.is_static(),
+            is_eof: false,
+            return_memory_offset,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
+}
+
+pub fn extcall_gas_calc<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+    target: Address,
+    transfers_value: bool,
+) -> Option<u64> {
+    let Some(account_load) = host_load_account_delegated(target) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return None;
+    };
+
+    // account_load.is_empty will be accounted if there is transfer value
+    // Berlin can be hardcoded as extcall came after berlin.
+    let call_cost = gas::call_cost(
+        interpreter.runtime_flag.spec_id(),
+        transfers_value,
+        account_load,
+    );
+    gas!(interpreter, call_cost, None);
+
+    // Calculate the gas available to callee as caller’s
+    // remaining gas reduced by max(ceil(gas/64), MIN_RETAINED_GAS) (MIN_RETAINED_GAS is 5000).
+    let gas_reduce = max(interpreter.control.gas().remaining() / 64, 5000);
+    let gas_limit = interpreter
+        .control
+        .gas()
+        .remaining()
+        .saturating_sub(gas_reduce);
+
+    // The MIN_CALLEE_GAS rule is a replacement for stipend:
+    // it simplifies the reasoning about the gas costs and is
+    // applied uniformly for all introduced EXT*CALL instructions.
+    //
+    // If Gas available to callee is less than MIN_CALLEE_GAS trigger light failure (Same as Revert).
+    if gas_limit < MIN_CALLEE_GAS {
+        // Push 1 to stack to indicate that call light failed.
+        // It is safe to ignore stack overflow error as we already popped multiple values from stack.
+        let _ = interpreter.stack.push(U256::from(1));
+        interpreter.return_data.clear();
+        // Return none to continue execution.
+        return None;
+    }
+
+    gas!(interpreter, gas_limit, None);
+    Some(gas_limit)
+}
+
+pub fn extcall<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    host: &mut H,
+) {
+    require_eof!(interpreter);
+
+    // Pop target address
+    let Some(target_address) = pop_extcall_target_address(interpreter) else {
+        return;
+    };
+
+    // Input call
+    let Some(input) = extcall_input(interpreter) else {
+        return;
+    };
+
+    popn!([value], interpreter);
+    let has_transfer = !value.is_zero();
+    if interpreter.runtime_flag.is_static() && has_transfer {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::CallNotAllowedInsideStatic);
+        return;
+    }
+
+    let Some(gas_limit) = extcall_gas_calc(interpreter, host, target_address, has_transfer) else {
+        return;
+    };
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address,
+            caller: interpreter.input.target_address(),
+            bytecode_address: target_address,
+            value: CallValue::Transfer(value),
+            scheme: CallScheme::ExtCall,
+            is_static: interpreter.runtime_flag.is_static(),
+            is_eof: true,
+            return_memory_offset: 0..0,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
+}
+
+pub fn extdelegatecall<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    host: &mut H,
+) {
+    require_eof!(interpreter);
+
+    // Pop target address
+    let Some(target_address) = pop_extcall_target_address(interpreter) else {
+        return;
+    };
+
+    // Input call
+    let Some(input) = extcall_input(interpreter) else {
+        return;
+    };
+
+    let Some(gas_limit) = extcall_gas_calc(interpreter, host, target_address, false) else {
+        return;
+    };
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address: interpreter.input.target_address(),
+            caller: interpreter.input.caller_address(),
+            bytecode_address: target_address,
+            value: CallValue::Apparent(interpreter.input.call_value()),
+            scheme: CallScheme::ExtDelegateCall,
+            is_static: interpreter.runtime_flag.is_static(),
+            is_eof: true,
+            return_memory_offset: 0..0,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
+}
+
+pub fn static_call<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    popn!([local_gas_limit, to], interpreter);
+    let to = Address::from_word(B256::from(to));
+    // Max gas limit is not possible in real ethereum situation.
+    let local_gas_limit = u64::try_from(local_gas_limit).unwrap_or(u64::MAX);
+
+    let Some((input, return_memory_offset)) = get_memory_input_and_out_ranges(interpreter) else {
+        return;
+    };
+
+    let Some(mut load) = host_load_account_delegated(to) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+    // Set `is_empty` to false as we are not creating this account.
+    load.is_empty = false;
+    let Some(gas_limit) = calc_call_gas(interpreter, load, false, local_gas_limit) else {
+        return;
+    };
+    gas!(interpreter, gas_limit);
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address: to,
+            caller: interpreter.input.target_address(),
+            bytecode_address: to,
+            value: CallValue::Transfer(U256::ZERO),
+            scheme: CallScheme::StaticCall,
+            is_static: true,
+            is_eof: false,
+            return_memory_offset,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
+}
+
+pub fn extstaticcall<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    host: &mut H,
+) {
+    require_eof!(interpreter);
+
+    // Pop target address
+    let Some(target_address) = pop_extcall_target_address(interpreter) else {
+        return;
+    };
+
+    // Input call
+    let Some(input) = extcall_input(interpreter) else {
+        return;
+    };
+
+    let Some(gas_limit) = extcall_gas_calc(interpreter, host, target_address, false) else {
+        return;
+    };
+
+    // Call host to interact with target contract
+    interpreter.control.set_next_action(
+        InterpreterAction::NewFrame(FrameInput::Call(Box::new(CallInputs {
+            input,
+            gas_limit,
+            target_address,
+            caller: interpreter.input.target_address(),
+            bytecode_address: target_address,
+            value: CallValue::Transfer(U256::ZERO),
+            scheme: CallScheme::ExtStaticCall,
+            is_static: true,
+            is_eof: true,
+            return_memory_offset: 0..0,
+        }))),
+        InstructionResult::CallOrCreate,
+    );
 }

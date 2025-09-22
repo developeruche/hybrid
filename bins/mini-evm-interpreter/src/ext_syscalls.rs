@@ -2,6 +2,7 @@ use core::arch::asm;
 
 use crate::utils::{__address_to_3u64, serialize_sstore_input};
 use ext_revm::{
+    context::journaled_state::AccountLoad,
     interpreter::{SStoreResult, StateLoad},
     primitives::{Address, Bytes, FixedBytes, B256, U256},
 };
@@ -18,6 +19,7 @@ pub mod mini_evm_syscalls_ids {
     pub const HOST_SSTORE: u64 = 16;
     pub const HOST_TLOAD: u64 = 17;
     pub const HOST_TSTORE: u64 = 18;
+    pub const HOST_LOAD_ACCOUNT_DELEGATED: u64 = 19;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -248,4 +250,29 @@ pub fn host_tstore(address: Address, index: U256, value: U256) {
             in("t0") mini_evm_syscalls_ids::HOST_TSTORE
         );
     }
+}
+
+pub fn host_load_account_delegated(address: Address) -> Option<StateLoad<AccountLoad>> {
+    let (limb_1, limb_2, limb_3) = __address_to_3u64(address);
+    let mut size;
+
+    unsafe {
+        asm!(
+            "ecall",
+            in("a0") limb_1,
+            in("a1") limb_2,
+            in("a2") limb_3,
+            lateout("a0") size,
+            in("t0") mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_DELEGATED
+        );
+    }
+
+    let out_serialized = unsafe { slice_from_raw_parts(MINI_EVM_SYSCALLS_MEM_ADDR, size) };
+
+    let out: Option<StateLoad<AccountLoad>> =
+        bincode::serde::decode_from_slice(out_serialized, bincode::config::legacy())
+            .unwrap()
+            .0;
+
+    out
 }
