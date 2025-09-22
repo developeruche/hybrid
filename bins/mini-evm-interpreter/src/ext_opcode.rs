@@ -26,8 +26,8 @@ use ext_revm::{
 
 use crate::ext_syscalls::{
     host_balance, host_block_hash, host_block_number, host_load_account_code,
-    host_load_account_code_hash, host_load_account_delegated, host_sload, host_sstore, host_tload,
-    host_tstore,
+    host_load_account_code_hash, host_load_account_delegated, host_selfdestruct, host_sload,
+    host_sstore, host_tload, host_tstore,
 };
 
 pub fn balance<WIRE: InterpreterTypes, H: Host + ?Sized>(
@@ -644,4 +644,37 @@ pub fn extstaticcall<WIRE: InterpreterTypes, H: Host + ?Sized>(
         }))),
         InstructionResult::CallOrCreate,
     );
+}
+
+pub fn selfdestruct<WIRE: InterpreterTypes, H: Host + ?Sized>(
+    interpreter: &mut Interpreter<WIRE>,
+    _host: &mut H,
+) {
+    require_non_staticcall!(interpreter);
+    popn!([target], interpreter);
+    let target = target.into_address();
+
+    let Some(res) = host_selfdestruct(interpreter.input.target_address(), target) else {
+        interpreter
+            .control
+            .set_instruction_result(InstructionResult::FatalExternalError);
+        return;
+    };
+
+    // EIP-3529: Reduction in refunds
+    if !interpreter.runtime_flag.spec_id().is_enabled_in(LONDON) && !res.previously_destroyed {
+        interpreter
+            .control
+            .gas_mut()
+            .record_refund(gas::SELFDESTRUCT)
+    }
+
+    gas!(
+        interpreter,
+        gas::selfdestruct_cost(interpreter.runtime_flag.spec_id(), res)
+    );
+
+    interpreter
+        .control
+        .set_instruction_result(InstructionResult::SelfDestruct);
 }

@@ -3,7 +3,7 @@ use core::arch::asm;
 use crate::utils::{__address_to_3u64, serialize_sstore_input};
 use ext_revm::{
     context::journaled_state::AccountLoad,
-    interpreter::{SStoreResult, StateLoad},
+    interpreter::{SStoreResult, SelfDestructResult, StateLoad},
     primitives::{Address, Bytes, FixedBytes, B256, U256},
 };
 use hybrid_contract::{slice_from_raw_parts, slice_from_raw_parts_mut};
@@ -20,6 +20,7 @@ pub mod mini_evm_syscalls_ids {
     pub const HOST_TLOAD: u64 = 17;
     pub const HOST_TSTORE: u64 = 18;
     pub const HOST_LOAD_ACCOUNT_DELEGATED: u64 = 19;
+    pub const HOST_SELFDESTRUCT: u64 = 20;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -270,6 +271,38 @@ pub fn host_load_account_delegated(address: Address) -> Option<StateLoad<Account
     let out_serialized = unsafe { slice_from_raw_parts(MINI_EVM_SYSCALLS_MEM_ADDR, size) };
 
     let out: Option<StateLoad<AccountLoad>> =
+        bincode::serde::decode_from_slice(out_serialized, bincode::config::legacy())
+            .unwrap()
+            .0;
+
+    out
+}
+
+pub fn host_selfdestruct(
+    address: Address,
+    target: Address,
+) -> Option<StateLoad<SelfDestructResult>> {
+    let (limb_1, limb_2, limb_3) = __address_to_3u64(address);
+    let (target_1, target_2, target_3) = __address_to_3u64(target);
+    let mut size;
+
+    unsafe {
+        asm!(
+            "ecall",
+            in("a0") limb_1,
+            in("a1") limb_2,
+            in("a2") limb_3,
+            in("a3") target_1,
+            in("a4") target_2,
+            in("a5") target_3,
+            lateout("a0") size,
+            in("t0") mini_evm_syscalls_ids::HOST_SELFDESTRUCT
+        );
+    }
+
+    let out_serialized = unsafe { slice_from_raw_parts(MINI_EVM_SYSCALLS_MEM_ADDR, size) };
+
+    let out: Option<StateLoad<SelfDestructResult>> =
         bincode::serde::decode_from_slice(out_serialized, bincode::config::legacy())
             .unwrap()
             .0;
