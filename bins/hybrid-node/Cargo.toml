@@ -36,3 +36,7 @@ alloy = { version = "1.0.6", features = [
     "signer-trezor",
     "signer-yubihsm",
 ] }
+
+
+[dev-dependencies]
+serde_json = { workspace = true }

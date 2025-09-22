@@ -7,15 +7,30 @@ use reth::revm::{
         EthPrecompiles, EvmTr,
     },
     inspector::{inspect_instructions, InspectorEvmTr, JournalExt},
-    interpreter::{interpreter::EthInterpreter, Interpreter, InterpreterTypes},
+    interpreter::{interpreter::EthInterpreter, Interpreter, InterpreterAction, InterpreterTypes},
     Inspector,
 };
+use rvemu::{emulator::Emulator, exception::Exception};
 
 use crate::{
     execution::helper::dram_slice,
     mini_evm_coding::{deserialize_output, serialize_input},
     setup::setup_from_mini_elf,
 };
+
+pub mod mini_evm_syscalls_ids {
+    pub const HOST_BALANCE: u64 = 10;
+    pub const HOST_LOAD_ACCOUNT_CODE: u64 = 11;
+    pub const HOST_LOAD_ACCOUNT_CODE_HASH: u64 = 12;
+    pub const HOST_BLOCK_NUMBER: u64 = 13;
+    pub const HOST_BLOCK_HASH: u64 = 14;
+    pub const HOST_SLOAD: u64 = 15;
+    pub const HOST_SSTORE: u64 = 16;
+    pub const HOST_TLOAD: u64 = 17;
+    pub const HOST_TSTORE: u64 = 18;
+    pub const HOST_LOAD_ACCOUNT_DELEGATED: u64 = 19;
+    pub const HOST_SELFDESTRUCT: u64 = 20;
+}
 
 /// HybridEvm variant of the EVM.
 pub struct HybridEvm<CTX, INSP>(
@@ -96,11 +111,11 @@ where
 
         let emu_input = serialize_input(&interpreter, &block, &tx);
 
-        #[cfg(test)]
+        // #[cfg(test)]
         let mini_evm_bin: &[u8] = include_bytes!("../../../bins/mini-evm-interpreter/target/riscv64imac-unknown-none-elf/release/runtime");
 
-        #[cfg(not(test))]
-        let mini_evm_bin: &[u8] = include_bytes!("../mini-evm-interpreter");
+        // #[cfg(not(test))]
+        // let mini_evm_bin: &[u8] = include_bytes!("../mini-evm-interpreter");
 
         let mut emulator = match setup_from_mini_elf(mini_evm_bin, &emu_input) {
             Ok(emulator) => emulator,
@@ -110,23 +125,55 @@ where
             }
         };
 
-        let return_res = emulator.estart();
+        fn mini_interpreter_return(mut emulator: &mut Emulator) -> InterpreterAction {
+            let interpreter_output_size: u64 = emulator.cpu.xregs.read(31);
 
-        match return_res {
-            Ok(_) => (),
-            Err(err) => {
-                // TODO: Here syscalls would be handled
-                println!("Emulator Error Occured: {:?}", err);
-            }
+            let raw_output =
+                dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
+
+            let (_, _, _, o_out) = deserialize_output(raw_output);
+
+            return o_out;
         }
 
-        let interpreter_output_size: u64 = emulator.cpu.xregs.read(31);
+        loop {
+            let return_res = emulator.estart();
 
-        let raw_output = dram_slice(&mut emulator, 0x8000_0000, interpreter_output_size).unwrap();
+            match return_res {
+                Err(Exception::EnvironmentCallFromMMode) => {
+                    let t0: u64 = emulator.cpu.xregs.read(5);
 
-        let (_, _, _, o_out) = deserialize_output(raw_output);
+                    // check to see that t0 is not in the range 10 - 20
+                    if t0 < 10 || t0 > 20 {
+                        println!("t0 is not in the range 10 - 20");
+                        return mini_interpreter_return(&mut emulator);
+                    }
 
-        o_out
+                    match t0 {
+                        mini_evm_syscalls_ids::HOST_BALANCE => {}
+                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE => {}
+                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE_HASH => {}
+                        mini_evm_syscalls_ids::HOST_BLOCK_NUMBER => {}
+                        mini_evm_syscalls_ids::HOST_BLOCK_HASH => {}
+                        mini_evm_syscalls_ids::HOST_SLOAD => {}
+                        mini_evm_syscalls_ids::HOST_SSTORE => {}
+                        mini_evm_syscalls_ids::HOST_TLOAD => {}
+                        mini_evm_syscalls_ids::HOST_TSTORE => {}
+
+                        _ => {
+                            println!("Mini EVM interpreter error: An unsupported sys_call was called: {}", t0);
+                        }
+                    }
+                }
+                Ok(_) => {
+                    continue;
+                }
+                Err(e) => {
+                    println!("Error On Execute: {:?}", e);
+                    return mini_interpreter_return(&mut emulator);
+                }
+            }
+        }
     }
 
     fn ctx_precompiles(&mut self) -> (&mut Self::Context, &mut Self::Precompiles) {

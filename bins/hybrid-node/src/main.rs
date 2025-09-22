@@ -60,15 +60,19 @@ async fn main() -> Result<(), eyre::Error> {
 #[cfg(test)]
 mod tests {
     use alloy::{
+        contract::{ContractInstance, Interface},
+        dyn_abi::DynSolValue,
         hex,
         network::{ReceiptResponse, TransactionBuilder},
         node_bindings::Anvil,
+        primitives::U256,
         providers::{Provider, ProviderBuilder},
         rpc::types::TransactionRequest,
         signers::local::PrivateKeySigner,
     };
 
     #[tokio::test]
+    #[ignore]
     async fn test_start_node_testing_riscv() {
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
@@ -103,8 +107,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_node_testing_smart_contract() {
-        // sleep for 10 seconds
-        tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
+        // sleep for 20 seconds
+        // tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
         let anvil = Anvil::new().try_spawn().unwrap();
@@ -134,5 +138,51 @@ mod tests {
             .expect("Failed to get contract address");
 
         println!("Deployed contract at address: {}", contract_address); // 0x5FbDB2315678afecb367f032d93F642f64180aa3
+
+        // Get the contract ABI.
+        let path = std::env::current_dir()
+            .unwrap()
+            .join("artifacts/Counter.json");
+
+        let artifact = std::fs::read(path).expect("Failed to read artifact");
+        let json: serde_json::Value = serde_json::from_slice(&artifact).unwrap();
+
+        let abi_value = json.get("abi").expect("Failed to get ABI from artifact");
+        let abi = serde_json::from_str(&abi_value.to_string()).unwrap();
+
+        let contract =
+            ContractInstance::new(contract_address, provider.clone(), Interface::new(abi));
+
+        let number_value = DynSolValue::from(U256::from(42));
+
+        println!("Setting number to 42...");
+        let tx_hash = contract
+            .function("setNumber", &[number_value])
+            .unwrap()
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await
+            .unwrap();
+
+        println!("Set number to 42: {tx_hash}");
+
+        let number_value = contract
+            .function("number", &[])
+            .unwrap()
+            .call()
+            .await
+            .unwrap();
+        let number = number_value.first().unwrap().as_uint().unwrap().0;
+        assert_eq!(U256::from(43), number);
+
+        println!("Retrieved number: {number}");
+
+        // Try calling a function that does not exist.
+        let unknown_function = contract.function("decrement", &[]).unwrap_err();
+        assert!(unknown_function
+            .to_string()
+            .contains("function decrement does not exist"));
     }
 }
