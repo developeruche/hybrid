@@ -7,16 +7,23 @@ use reth::revm::{
         EthPrecompiles, EvmTr,
     },
     inspector::{inspect_instructions, InspectorEvmTr, JournalExt},
-    interpreter::{interpreter::EthInterpreter, Interpreter, InterpreterAction, InterpreterTypes},
+    interpreter::{
+        interpreter::EthInterpreter, Host, Interpreter, InterpreterAction, InterpreterTypes,
+    },
     Inspector,
 };
 use rvemu::{emulator::Emulator, exception::Exception};
 
 use crate::{
-    execution::helper::dram_slice,
+    execution::helper::{dram_slice, dram_write},
     mini_evm_coding::{deserialize_output, serialize_input},
     setup::setup_from_mini_elf,
+    utils::deserialize_sstore_input,
 };
+
+/// Allocating the last 20MB of the address space for the mini-evm syscalls
+/// @dev When the emu have paging active, the memory address is not guaranteed to be available.
+pub const MINI_EVM_SYSCALLS_MEM_ADDR: usize = 0xBEC00000;
 
 pub mod mini_evm_syscalls_ids {
     pub const HOST_BALANCE: u64 = 10;
@@ -156,7 +163,28 @@ where
                         mini_evm_syscalls_ids::HOST_BLOCK_NUMBER => {}
                         mini_evm_syscalls_ids::HOST_BLOCK_HASH => {}
                         mini_evm_syscalls_ids::HOST_SLOAD => {}
-                        mini_evm_syscalls_ids::HOST_SSTORE => {}
+                        mini_evm_syscalls_ids::HOST_SSTORE => {
+                            let input_size: u64 = emulator.cpu.xregs.read(10);
+                            let debug_output = dram_slice(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                input_size,
+                            )
+                            .unwrap();
+                            let (address, key, value) = deserialize_sstore_input(debug_output);
+
+                            let output = context.sstore(address, key, value);
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
                         mini_evm_syscalls_ids::HOST_TLOAD => {}
                         mini_evm_syscalls_ids::HOST_TSTORE => {}
 

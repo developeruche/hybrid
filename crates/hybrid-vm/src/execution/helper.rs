@@ -62,6 +62,19 @@ pub fn dram_slice(emu: &mut Emulator, ret_offset: u64, ret_size: u64) -> Result<
     }
 }
 
+pub fn dram_write(emu: &mut Emulator, ret_offset: u64, data: &[u8]) -> Result<(), String> {
+    let size = data.len() as u64;
+    if size != 0 {
+        Ok(emu
+            .cpu
+            .bus
+            .write_dram_slice(ret_offset..(ret_offset + size), data)
+            .map_err(|e| "Failed to get DRAM slice".to_string() + ": " + &e.exception_message())?)
+    } else {
+        Ok(())
+    }
+}
+
 pub fn execute_create(
     emu: &mut Emulator,
     interpreter: &mut Interpreter,
