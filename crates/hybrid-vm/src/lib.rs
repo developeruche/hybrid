@@ -7,3 +7,4 @@ pub mod handler;
 pub mod hybrid_execute;
 pub mod mini_evm_coding;
 pub mod setup;
+pub mod utils;

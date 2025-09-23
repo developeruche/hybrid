@@ -44,6 +44,12 @@ use ext_revm::{
     },
 };
 
+use crate::ext_opcode::{
+    balance, blockhash, call, call_code, delegate_call, extcall, extcodecopy, extcodehash,
+    extcodesize, extdelegatecall, extstaticcall, selfbalance, sload, sstore,
+    static_call, tload, tstore,
+};
+
 /// Creates a comprehensive EVM instruction table for the mini-EVM interpreter.
 ///
 /// This function builds a complete opcode mapping table that defines how each EVM instruction
@@ -174,7 +180,7 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
 
     // === Environment Information (0x30-0x39) ===
     table[ADDRESS as usize] = system::address; // 0x30: Get executing contract address
-    table[BALANCE as usize] = host::balance; // 0x31: Get account balance [HOST]
+    table[BALANCE as usize] = balance; // 0x31: Get account balance [HOST]
     table[ORIGIN as usize] = tx_info::origin; // 0x32: Get transaction origin
     table[CALLER as usize] = system::caller; // 0x33: Get message caller
     table[CALLVALUE as usize] = system::callvalue; // 0x34: Get sent value
@@ -186,19 +192,19 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
 
     // === Extended Environment and Block Information (0x3A-0x4A) ===
     table[GASPRICE as usize] = tx_info::gasprice; // 0x3A: Get gas price
-    table[EXTCODESIZE as usize] = host::extcodesize; // 0x3B: External code size [HOST]
-    table[EXTCODECOPY as usize] = host::extcodecopy; // 0x3C: Copy external code [HOST]
+    table[EXTCODESIZE as usize] = extcodesize; // 0x3B: External code size [HOST]
+    table[EXTCODECOPY as usize] = extcodecopy; // 0x3C: Copy external code [HOST]
     table[RETURNDATASIZE as usize] = system::returndatasize; // 0x3D: Return data size
     table[RETURNDATACOPY as usize] = system::returndatacopy; // 0x3E: Copy return data
-    table[EXTCODEHASH as usize] = host::extcodehash; // 0x3F: External code hash [HOST]
-    table[BLOCKHASH as usize] = host::blockhash; // 0x40: Get block hash [HOST]
+    table[EXTCODEHASH as usize] = extcodehash; // 0x3F: External code hash [HOST]
+    table[BLOCKHASH as usize] = blockhash; // 0x40: Get block hash [HOST]
     table[COINBASE as usize] = block_info::coinbase; // 0x41: Get coinbase address
     table[TIMESTAMP as usize] = block_info::timestamp; // 0x42: Get block timestamp
     table[NUMBER as usize] = block_info::block_number; // 0x43: Get block number
     table[DIFFICULTY as usize] = block_info::difficulty; // 0x44: Get block difficulty
     table[GASLIMIT as usize] = block_info::gaslimit; // 0x45: Get block gas limit
     table[CHAINID as usize] = block_info::chainid; // 0x46: Get chain identifier
-    table[SELFBALANCE as usize] = host::selfbalance; // 0x47: Get own balance [HOST]
+    table[SELFBALANCE as usize] = selfbalance; // 0x47: Get own balance [HOST]
     table[BASEFEE as usize] = block_info::basefee; // 0x48: Get base fee
     table[BLOBHASH as usize] = tx_info::blob_hash; // 0x49: Get blob hash
     table[BLOBBASEFEE as usize] = block_info::blob_basefee; // 0x4A: Get blob base fee
@@ -208,16 +214,16 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[MLOAD as usize] = memory::mload; // 0x51: Load word from memory
     table[MSTORE as usize] = memory::mstore; // 0x52: Store word to memory
     table[MSTORE8 as usize] = memory::mstore8; // 0x53: Store byte to memory
-    table[SLOAD as usize] = host::sload; // 0x54: Load from storage [HOST]
-    table[SSTORE as usize] = host::sstore; // 0x55: Store to storage [HOST]
+    table[SLOAD as usize] = sload; // 0x54: Load from storage [HOST]
+    table[SSTORE as usize] = sstore; // 0x55: Store to storage [HOST]
     table[JUMP as usize] = control::jump; // 0x56: Unconditional jump
     table[JUMPI as usize] = control::jumpi; // 0x57: Conditional jump
     table[PC as usize] = control::pc; // 0x58: Get program counter
     table[MSIZE as usize] = memory::msize; // 0x59: Get memory size
     table[GAS as usize] = system::gas; // 0x5A: Get available gas
     table[JUMPDEST as usize] = control::jumpdest_or_nop; // 0x5B: Jump destination marker
-    table[TLOAD as usize] = host::tload; // 0x5C: Load from transient storage [HOST]
-    table[TSTORE as usize] = host::tstore; // 0x5D: Store to transient storage [HOST]
+    table[TLOAD as usize] = tload; // 0x5C: Load from transient storage [HOST]
+    table[TSTORE as usize] = tstore; // 0x5D: Store to transient storage [HOST]
     table[MCOPY as usize] = memory::mcopy; // 0x5E: Copy memory region
 
     // === Push Operations (0x5F-0x7F) ===
@@ -327,18 +333,18 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     // === System and Contract Operations (0xF0-0xFF) ===
     // Contract creation and management
     table[CREATE as usize] = contract::create::<_, false, _>; // 0xF0: Create contract [HOST]
-    table[CALL as usize] = contract::call; // 0xF1: Message call [HOST]
-    table[CALLCODE as usize] = contract::call_code; // 0xF2: Message call with alternative code [HOST]
+    table[CALL as usize] = call; // 0xF1: Message call [HOST]
+    table[CALLCODE as usize] = call_code; // 0xF2: Message call with alternative code [HOST]
     table[RETURN as usize] = control::ret; // 0xF3: Halt and return data
-    table[DELEGATECALL as usize] = contract::delegate_call; // 0xF4: Message call with sender and value [HOST]
+    table[DELEGATECALL as usize] = delegate_call; // 0xF4: Message call with sender and value [HOST]
     table[CREATE2 as usize] = contract::create::<_, true, _>; // 0xF5: Create contract with salt [HOST]
 
     // Advanced system operations
     table[RETURNDATALOAD as usize] = system::returndataload; // 0xF7: Load word from return data
-    table[EXTCALL as usize] = contract::extcall; // 0xF8: External call [HOST]
-    table[EXTDELEGATECALL as usize] = contract::extdelegatecall; // 0xF9: External delegate call [HOST]
-    table[STATICCALL as usize] = contract::static_call; // 0xFA: Static message call [HOST]
-    table[EXTSTATICCALL as usize] = contract::extstaticcall; // 0xFB: External static call [HOST]
+    table[EXTCALL as usize] = extcall; // 0xF8: External call [HOST]
+    table[EXTDELEGATECALL as usize] = extdelegatecall; // 0xF9: External delegate call [HOST]
+    table[STATICCALL as usize] = static_call; // 0xFA: Static message call [HOST]
+    table[EXTSTATICCALL as usize] = extstaticcall; // 0xFB: External static call [HOST]
     table[REVERT as usize] = control::revert; // 0xFD: Halt and revert state changes
     table[INVALID as usize] = control::invalid; // 0xFE: Invalid instruction
     table[SELFDESTRUCT as usize] = host::selfdestruct; // 0xFF: Self-destruct contract [HOST]

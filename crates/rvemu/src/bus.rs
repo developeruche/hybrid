@@ -106,11 +106,25 @@ impl Bus {
     }
 
     pub fn get_dram_slice(&mut self, range: Range<u64>) -> Result<&mut [u8], Exception> {
-        println!("Getting DRAM slice {:?} - base: {}", range, DRAM_BASE);
         let range = (range.start - DRAM_BASE) as usize..(range.end as usize - DRAM_BASE as usize);
         self.dram
             .dram
             .get_mut(range)
             .ok_or(Exception::LoadAccessFault)
+    }
+
+    pub fn write_dram_slice(&mut self, range: Range<u64>, data: &[u8]) -> Result<(), Exception> {
+        let start = (range.start - DRAM_BASE) as usize;
+        let end = (range.end - DRAM_BASE) as usize;
+        if end > self.dram.dram.len() || end - start != data.len() {
+            return Err(Exception::StoreAMOAccessFault);
+        }
+        let dram_slice = self
+            .dram
+            .dram
+            .get_mut(start..end)
+            .ok_or(Exception::StoreAMOAccessFault)?;
+        dram_slice.copy_from_slice(data);
+        Ok(())
     }
 }

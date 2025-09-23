@@ -4890,6 +4890,7 @@ dependencies = [
  "colored",
  "eyre",
  "hybrid-ethereum",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.20",
