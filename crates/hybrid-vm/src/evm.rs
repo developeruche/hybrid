@@ -122,11 +122,11 @@ where
 
         let emu_input = serialize_input(&interpreter, &block, &tx);
 
-        // #[cfg(test)]
+        #[cfg(test)]
         let mini_evm_bin: &[u8] = include_bytes!("../../../bins/mini-evm-interpreter/target/riscv64imac-unknown-none-elf/release/runtime");
 
-        // #[cfg(not(test))]
-        // let mini_evm_bin: &[u8] = include_bytes!("../mini-evm-interpreter");
+        #[cfg(not(test))]
+        let mini_evm_bin: &[u8] = include_bytes!("../mini-evm-interpreter");
 
         let mut emulator = match setup_from_mini_elf(mini_evm_bin, &emu_input) {
             Ok(emulator) => emulator,
@@ -160,11 +160,104 @@ where
                     }
 
                     match t0 {
-                        mini_evm_syscalls_ids::HOST_BALANCE => {}
-                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE => {}
-                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE_HASH => {}
-                        mini_evm_syscalls_ids::HOST_BLOCK_NUMBER => {}
-                        mini_evm_syscalls_ids::HOST_BLOCK_HASH => {}
+                        mini_evm_syscalls_ids::HOST_BALANCE => {
+                            let addr_1: u64 = emulator.cpu.xregs.read(10);
+                            let addr_2: u64 = emulator.cpu.xregs.read(11);
+                            let addr_3: u64 = emulator.cpu.xregs.read(12);
+
+                            let address = __3u64_to_address(addr_1, addr_2, addr_3);
+
+                            let output = context.balance(address);
+
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
+                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE => {
+                            let addr_1: u64 = emulator.cpu.xregs.read(10);
+                            let addr_2: u64 = emulator.cpu.xregs.read(11);
+                            let addr_3: u64 = emulator.cpu.xregs.read(12);
+
+                            let address = __3u64_to_address(addr_1, addr_2, addr_3);
+
+                            let output = context.load_account_code(address);
+
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
+                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE_HASH => {
+                            let addr_1: u64 = emulator.cpu.xregs.read(10);
+                            let addr_2: u64 = emulator.cpu.xregs.read(11);
+                            let addr_3: u64 = emulator.cpu.xregs.read(12);
+
+                            let address = __3u64_to_address(addr_1, addr_2, addr_3);
+
+                            let output = context.load_account_code_hash(address);
+
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
+                        mini_evm_syscalls_ids::HOST_BLOCK_NUMBER => {
+                            let block_number = context.block_number();
+                            emulator.cpu.xregs.write(10, block_number);
+                        }
+                        mini_evm_syscalls_ids::HOST_BLOCK_HASH => {
+                            let block_number = emulator.cpu.xregs.read(10);
+                            let output = context.block_hash(block_number);
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
                         mini_evm_syscalls_ids::HOST_SLOAD => {
                             let addr_1: u64 = emulator.cpu.xregs.read(10);
                             let addr_2: u64 = emulator.cpu.xregs.read(11);
@@ -183,6 +276,11 @@ where
                             let output_deserialized =
                                 bincode::serde::encode_to_vec(output, bincode::config::legacy())
                                     .unwrap();
+
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
 
                             dram_write(
                                 &mut emulator,
@@ -206,6 +304,11 @@ where
                                 bincode::serde::encode_to_vec(output, bincode::config::legacy())
                                     .unwrap();
 
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
+
                             dram_write(
                                 &mut emulator,
                                 MINI_EVM_SYSCALLS_MEM_ADDR as u64,
@@ -213,8 +316,40 @@ where
                             )
                             .unwrap();
                         }
-                        mini_evm_syscalls_ids::HOST_TLOAD => {}
-                        mini_evm_syscalls_ids::HOST_TSTORE => {}
+                        mini_evm_syscalls_ids::HOST_TLOAD => {
+                            let addr_1: u64 = emulator.cpu.xregs.read(10);
+                            let addr_2: u64 = emulator.cpu.xregs.read(11);
+                            let addr_3: u64 = emulator.cpu.xregs.read(12);
+
+                            let key_limb_0 = emulator.cpu.xregs.read(13);
+                            let key_limb_1 = emulator.cpu.xregs.read(14);
+                            let key_limb_2 = emulator.cpu.xregs.read(15);
+                            let key_limb_3 = emulator.cpu.xregs.read(16);
+
+                            let address = __3u64_to_address(addr_1, addr_2, addr_3);
+                            let key =
+                                U256::from_limbs([key_limb_0, key_limb_1, key_limb_2, key_limb_3]);
+
+                            let output = context.tload(address, key);
+                            let output = output.as_limbs();
+
+                            emulator.cpu.xregs.write(10, output[0]);
+                            emulator.cpu.xregs.write(11, output[1]);
+                            emulator.cpu.xregs.write(12, output[2]);
+                            emulator.cpu.xregs.write(13, output[3]);
+                        }
+                        mini_evm_syscalls_ids::HOST_TSTORE => {
+                            let input_size: u64 = emulator.cpu.xregs.read(10);
+                            let debug_output = dram_slice(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                input_size,
+                            )
+                            .unwrap();
+                            let (address, key, value) = deserialize_sstore_input(debug_output);
+
+                            context.tstore(address, key, value);
+                        }
 
                         _ => {
                             println!("Mini EVM interpreter error: An unsupported sys_call was called: {}", t0);

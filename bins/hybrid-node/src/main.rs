@@ -72,7 +72,6 @@ mod tests {
     };
 
     #[tokio::test]
-    #[ignore]
     async fn test_start_node_testing_riscv() {
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
@@ -108,7 +107,7 @@ mod tests {
     #[tokio::test]
     async fn test_start_node_testing_smart_contract() {
         // sleep for 20 seconds
-        // tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
         // note the dev node should be running before this test is executed
         let rpc_url = "http://127.0.0.1:8545";
         let anvil = Anvil::new().try_spawn().unwrap();
