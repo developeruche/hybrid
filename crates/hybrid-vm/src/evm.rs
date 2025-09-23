@@ -10,12 +10,16 @@ use reth::revm::{
     interpreter::{
         interpreter::EthInterpreter, Host, Interpreter, InterpreterAction, InterpreterTypes,
     },
+    primitives::ruint::aliases::U256,
     Inspector,
 };
 use rvemu::{emulator::Emulator, exception::Exception};
 
 use crate::{
-    execution::helper::{dram_slice, dram_write},
+    execution::{
+        helper::{dram_slice, dram_write},
+        utils::__3u64_to_address,
+    },
     mini_evm_coding::{deserialize_output, serialize_input},
     setup::setup_from_mini_elf,
     utils::deserialize_sstore_input,
@@ -152,7 +156,6 @@ where
 
                     // check to see that t0 is not in the range 10 - 20
                     if t0 < 10 || t0 > 20 {
-                        println!("t0 is not in the range 10 - 20");
                         return mini_interpreter_return(&mut emulator);
                     }
 
@@ -162,7 +165,32 @@ where
                         mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_CODE_HASH => {}
                         mini_evm_syscalls_ids::HOST_BLOCK_NUMBER => {}
                         mini_evm_syscalls_ids::HOST_BLOCK_HASH => {}
-                        mini_evm_syscalls_ids::HOST_SLOAD => {}
+                        mini_evm_syscalls_ids::HOST_SLOAD => {
+                            let addr_1: u64 = emulator.cpu.xregs.read(10);
+                            let addr_2: u64 = emulator.cpu.xregs.read(11);
+                            let addr_3: u64 = emulator.cpu.xregs.read(12);
+
+                            let key_limb_0 = emulator.cpu.xregs.read(13);
+                            let key_limb_1 = emulator.cpu.xregs.read(14);
+                            let key_limb_2 = emulator.cpu.xregs.read(15);
+                            let key_limb_3 = emulator.cpu.xregs.read(16);
+
+                            let address = __3u64_to_address(addr_1, addr_2, addr_3);
+                            let key =
+                                U256::from_limbs([key_limb_0, key_limb_1, key_limb_2, key_limb_3]);
+
+                            let output = context.sload(address, key);
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
                         mini_evm_syscalls_ids::HOST_SSTORE => {
                             let input_size: u64 = emulator.cpu.xregs.read(10);
                             let debug_output = dram_slice(

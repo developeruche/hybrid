@@ -168,6 +168,19 @@ mod tests {
 
         println!("Set number to 42: {tx_hash}");
 
+        // Increment the number to 43.
+        let tx_hash = contract
+            .function("increment", &[])
+            .unwrap()
+            .send()
+            .await
+            .unwrap()
+            .watch()
+            .await
+            .unwrap();
+
+        println!("Incremented number: {tx_hash}");
+
         let number_value = contract
             .function("number", &[])
             .unwrap()

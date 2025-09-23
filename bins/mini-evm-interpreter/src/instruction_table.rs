@@ -44,7 +44,7 @@ use ext_revm::{
     },
 };
 
-use crate::ext_opcode::sstore;
+use crate::ext_opcode::{sload, sstore};
 
 /// Creates a comprehensive EVM instruction table for the mini-EVM interpreter.
 ///
@@ -210,7 +210,7 @@ pub const fn mini_instruction_table<WIRE: InterpreterTypes, H: Host + ?Sized>(
     table[MLOAD as usize] = memory::mload; // 0x51: Load word from memory
     table[MSTORE as usize] = memory::mstore; // 0x52: Store word to memory
     table[MSTORE8 as usize] = memory::mstore8; // 0x53: Store byte to memory
-    table[SLOAD as usize] = host::sload; // 0x54: Load from storage [HOST]
+    table[SLOAD as usize] = sload; // 0x54: Load from storage [HOST]
     table[SSTORE as usize] = sstore; // 0x55: Store to storage [HOST]
     table[JUMP as usize] = control::jump; // 0x56: Unconditional jump
     table[JUMPI as usize] = control::jumpi; // 0x57: Conditional jump
