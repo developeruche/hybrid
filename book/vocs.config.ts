@@ -42,11 +42,44 @@ export default defineConfig({
           link: "/protocols/overview",
         },
         {
-          text: "EVM Interpreter",
+          text: "How Hybrid Node Works",
           items: [
             {
               text: "Overview",
-              link: "/protocols/mini-evm-interpreter",
+              link: "/protocols/how-node-works/overview",
+            },
+            {
+              text: "Hybrid VM",
+              link: "/protocols/how-node-works/hybrid-vm",
+            },
+            {
+              text: "Mini EVM interpreter",
+              link: "/protocols/how-node-works/mini-evm-interpreter",
+            },
+            {
+              text: "RISCV Emulator",
+              link: "/protocols/how-node-works/riscv-emulator",
+            },
+            {
+              text: "Syscall Interface",
+              link: "/protocols/how-node-works/syscall-interface",
+            },
+          ],
+        },
+        {
+          text: "RUST Smart Contract Pipeline",
+          items: [
+            {
+              text: "Overview",
+              link: "/protocols/smart-contract-flow/overview",
+            },
+            {
+              text: "Memory Layout",
+              link: "/protocols/smart-contract-flow/memory-layout-and-runtime",
+            },
+            {
+              text: "Smart Contract Compilation",
+              link: "/protocols/smart-contract-flow/smart-contract-compilation",
             },
           ],
         },
