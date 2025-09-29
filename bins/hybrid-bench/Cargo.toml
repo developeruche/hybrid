@@ -1,0 +1,13 @@
+[package]
+name = "hybrid-bench"
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+repository.workspace = true
+documentation.workspace = true
+homepage.workspace = true
+edition.workspace = true
+
+[dependencies]

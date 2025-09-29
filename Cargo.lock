@@ -4852,6 +4852,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "hybrid-bench"
+version = "0.1.0"
+
+[[package]]
 name = "hybrid-compile"
 version = "0.1.0"
 dependencies = [
