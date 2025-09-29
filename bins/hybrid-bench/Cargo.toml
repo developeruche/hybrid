@@ -11,3 +11,4 @@ homepage.workspace = true
 edition.workspace = true
 
 [dependencies]
+revm.workspace = true
