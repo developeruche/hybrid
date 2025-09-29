@@ -1,4 +1,5 @@
 use crate::{
+    hybrid_vm_bench::run_with_hybrid_vm,
     revm_bench::run_with_revm,
     utils::{generate_calldata, load_contract_bytecode},
 };
@@ -35,5 +36,6 @@ fn main() {
         let calldata = generate_calldata(contract, NO_OF_ITERATIONS_ONE);
 
         run_with_revm(&runtime_code, RUNS, &calldata);
+        run_with_hybrid_vm(&runtime_code, RUNS, &calldata);
     }
 }

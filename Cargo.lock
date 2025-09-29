@@ -4855,6 +4855,8 @@ dependencies = [
 name = "hybrid-bench"
 version = "0.1.0"
 dependencies = [
+ "hybrid-ethereum",
+ "hybrid-vm",
  "revm 22.0.1 (git+https://github.com/developeruche/revm.git?branch=hybrid-revm-v2)",
  "sha3",
 ]

@@ -13,3 +13,5 @@ edition.workspace = true
 [dependencies]
 revm.workspace = true
 sha3 = "0.10.8"
+hybrid-vm.workspace = true
+hybrid-ethereum.workspace = true
