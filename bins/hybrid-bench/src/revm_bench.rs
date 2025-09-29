@@ -31,7 +31,7 @@ pub fn run_with_revm(contract_code: &str, runs: u64, calldata: &str) {
         ..Default::default()
     };
 
-    for _ in 0..runs - 1 {
+    for _ in 0..runs {
         let result = black_box(evm.transact(tx.clone())).unwrap();
         assert!(result.result.is_success(), "{:?}", result.result);
     }

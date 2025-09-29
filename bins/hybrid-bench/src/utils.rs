@@ -1,6 +1,6 @@
-use std::{fs::File, io::Read};
 use revm::primitives::hex;
 use sha3::{Digest, Keccak256};
+use std::{fs::File, io::Read};
 
 pub fn generate_calldata(function: &str, n: u64) -> String {
     let function_signature = format!("{function}(uint256)");
@@ -23,7 +23,7 @@ pub fn generate_calldata(function: &str, n: u64) -> String {
 
 pub fn load_contract_bytecode(bench_name: &str) -> String {
     let path = format!(
-        "{}/contracts/bin/{bench_name}.bin-runtime",
+        "{}/src/assets/{bench_name}.bin-runtime",
         env!("CARGO_MANIFEST_DIR"),
     );
 
