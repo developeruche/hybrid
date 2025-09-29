@@ -35,6 +35,7 @@ pub fn run_with_revm(contract_code: &str, runs: u64, calldata: &str) {
         let result = black_box(evm.transact(tx.clone())).unwrap();
         assert!(result.result.is_success(), "{:?}", result.result);
     }
+    //todo: remove this extra
     let result = black_box(evm.transact(tx)).unwrap();
     assert!(result.result.is_success(), "{:?}", result.result);
 
