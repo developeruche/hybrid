@@ -13,13 +13,6 @@
 
 This document presents the performance analysis of REVM vs Hybrid VM running in EVM-compatible mode across 12 smart contracts. The benchmarks measure execution time for various contract types, from simple operations to complex recursive algorithms.
 
-### Key Findings
-
-🎯 **Overall Performance**: Hybrid VM demonstrates **competitive performance** with REVM, achieving:
-- ✅ **Faster** in 7 out of 12 contracts (58%)
-- ⚖️ **Comparable** in 3 contracts (within 2% margin)
-- 🔄 **Slower** in 2 contracts (requiring optimization)
-
 ### Performance Categories
 - **Slow Contracts (100 runs)**: Hybrid VM wins 3/4, REVM wins 1/4
 - **Medium Contracts (500 runs)**: Mixed results, nearly equivalent

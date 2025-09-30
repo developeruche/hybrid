@@ -23,9 +23,10 @@ fn main() {
 
     for contract in contracts {
         let runtime_code = load_contract_bytecode(contract);
-        let calldata = generate_calldata(contract, NO_OF_ITERATIONS_ONE);
+        let calldata = generate_calldata("Benchmark", NO_OF_ITERATIONS_ONE);
 
         run_with_revm(&runtime_code, RUNS, &calldata);
-        run_with_hybrid_vm_evm_mode(&runtime_code, RUNS, &calldata);
+        // run_with_hybrid_vm_evm_mode(&runtime_code, RUNS, &calldata);
+        break;
     }
 }

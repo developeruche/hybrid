@@ -37,7 +37,8 @@ where
     }
 
     fn replay(&mut self) -> Self::Output {
-        HybridHandler::default().run(self)
+        let out = HybridHandler::default().run(self);
+        out
     }
 }
 

@@ -36,6 +36,8 @@ pub fn run_with_hybrid_vm_evm_mode(contract_code: &str, runs: u64, calldata: &st
 
     for _ in 0..runs {
         let result = black_box(h_evm.transact(tx.clone())).unwrap();
+        println!("Result: {:?}", result);
         assert!(result.result.is_success(), "{:?}", result.result);
+        break;
     }
 }

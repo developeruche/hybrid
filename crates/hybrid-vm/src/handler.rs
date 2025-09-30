@@ -5,8 +5,8 @@ use reth::revm::{
     },
     context_interface::{ContextTr, JournalTr},
     handler::{
-        instructions::InstructionProvider, EthFrame, EvmTr, FrameInitOrResult, FrameResult,
-        Handler, ItemOrResult, PrecompileProvider,
+        instructions::InstructionProvider, EthFrame, EvmTr, Frame, FrameInitOrResult,
+        FrameOrResult, FrameResult, Handler, ItemOrResult, PrecompileProvider,
     },
     inspector::{Inspector, InspectorEvmTr, InspectorHandler},
     interpreter::{interpreter::EthInterpreter, InterpreterResult},
@@ -46,6 +46,16 @@ where
         <EVM::Instructions as InstructionProvider>::InterpreterTypes,
     >;
     type HaltReason = HaltReason;
+
+    #[inline]
+    fn first_frame_init(
+        &mut self,
+        evm: &mut Self::Evm,
+        frame_input: <Self::Frame as Frame>::FrameInit,
+    ) -> Result<FrameOrResult<Self::Frame>, Self::Error> {
+        let out = Self::Frame::init_first(evm, frame_input);
+        out
+    }
 
     #[inline]
     fn frame_call(
