@@ -1,19 +1,9 @@
-use crate::{
-    hybrid_vm_bench::run_with_hybrid_vm,
+use hybrid_bench::{
+    hybrid_vm_bench::run_with_hybrid_vm_evm_mode,
     revm_bench::run_with_revm,
     utils::{generate_calldata, load_contract_bytecode},
+    NO_OF_ITERATIONS_ONE, RUNS,
 };
-
-pub(crate) mod hybrid_vm_bench;
-pub(crate) mod revm_bench;
-pub(crate) mod utils;
-
-pub const NO_OF_ITERATIONS_ONE: u64 = 60;
-pub const NO_OF_ITERATIONS_TWO: u64 = 120;
-pub const NO_OF_ITERATIONS_THREE: u64 = 500;
-
-pub const RUNS: u64 = 10000;
-pub const RUNS_SLOW: u64 = 200;
 
 fn main() {
     let contracts = [
@@ -36,6 +26,6 @@ fn main() {
         let calldata = generate_calldata(contract, NO_OF_ITERATIONS_ONE);
 
         run_with_revm(&runtime_code, RUNS, &calldata);
-        run_with_hybrid_vm(&runtime_code, RUNS, &calldata);
+        run_with_hybrid_vm_evm_mode(&runtime_code, RUNS, &calldata);
     }
 }

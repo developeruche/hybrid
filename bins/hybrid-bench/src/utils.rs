@@ -27,8 +27,6 @@ pub fn load_contract_bytecode(bench_name: &str) -> String {
         env!("CARGO_MANIFEST_DIR"),
     );
 
-    println!("Loading bytecode from file {path}");
-
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();

@@ -10,8 +10,19 @@ documentation.workspace = true
 homepage.workspace = true
 edition.workspace = true
 
+[lib]
+name = "hybrid_bench"
+path = "src/lib.rs"
+
 [dependencies]
 revm.workspace = true
 sha3 = "0.10.8"
 hybrid-vm.workspace = true
 hybrid-ethereum.workspace = true
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "vm_comparison"
+harness = false
