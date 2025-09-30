@@ -3,7 +3,7 @@ use hybrid_bench::{
     hybrid_vm_bench::run_with_hybrid_vm_evm_mode,
     revm_bench::run_with_revm,
     utils::{generate_calldata, load_contract_bytecode},
-    NO_OF_ITERATIONS_TWO,
+    NO_OF_ITERATIONS_ONE, NO_OF_ITERATIONS_TWO,
 };
 
 /// Contract categories for determining appropriate benchmark iterations
@@ -34,12 +34,12 @@ impl ContractBenchConfig {
     /// This controls how many times the VM executes the contract per benchmark iteration
     const fn runs(&self) -> u64 {
         match self.complexity {
-            // Fast contracts can handle more iterations
-            ContractComplexity::Fast => 1000,
-            // Medium complexity contracts use moderate iterations
-            ContractComplexity::Medium => 500,
-            // Slow contracts use fewer iterations to keep benchmark time reasonable
-            ContractComplexity::Slow => 100,
+            // Fast contracts use 10 runs for quick benchmarking
+            ContractComplexity::Fast => 10,
+            // Medium complexity contracts use 10 runs
+            ContractComplexity::Medium => 10,
+            // Slow contracts use 5 runs to keep benchmark time reasonable
+            ContractComplexity::Slow => 5,
         }
     }
 }
@@ -51,8 +51,8 @@ impl ContractBenchConfig {
 const CONTRACTS: &[ContractBenchConfig] = &[
     // Slow contracts - Deep recursion or intensive computation
     ContractBenchConfig::new("BubbleSort", ContractComplexity::Slow),
-    ContractBenchConfig::new("FactorialRecursive", ContractComplexity::Slow),
-    ContractBenchConfig::new("FibonacciRecursive", ContractComplexity::Slow),
+    // ContractBenchConfig::new("FactorialRecursive", ContractComplexity::Slow),
+    // ContractBenchConfig::new("FibonacciRecursive", ContractComplexity::Slow),
     ContractBenchConfig::new("ManyHashes", ContractComplexity::Slow),
     // Medium complexity contracts - Standard smart contract operations
     ContractBenchConfig::new("ERC20ApprovalTransfer", ContractComplexity::Medium),
@@ -78,7 +78,11 @@ fn bench_revm(c: &mut Criterion) {
         let runtime_code = load_contract_bytecode(config.name);
 
         // Generate calldata with NO_OF_ITERATIONS_TWO (120) iterations
-        let calldata = generate_calldata(config.name, NO_OF_ITERATIONS_TWO);
+        let calldata = if config.name == "FibonacciRecursive" {
+            generate_calldata("Benchmark", NO_OF_ITERATIONS_ONE)
+        } else {
+            generate_calldata("Benchmark", NO_OF_ITERATIONS_TWO)
+        };
 
         // Determine run count based on complexity
         let runs = config.runs();
@@ -107,7 +111,11 @@ fn bench_hybrid_vm(c: &mut Criterion) {
         let runtime_code = load_contract_bytecode(config.name);
 
         // Generate calldata with NO_OF_ITERATIONS_TWO (120) iterations
-        let calldata = generate_calldata(config.name, NO_OF_ITERATIONS_TWO);
+        let calldata = if config.name == "FibonacciRecursive" {
+            generate_calldata("Benchmark", NO_OF_ITERATIONS_ONE)
+        } else {
+            generate_calldata("Benchmark", NO_OF_ITERATIONS_TWO)
+        };
 
         // Determine run count based on complexity
         let runs = config.runs();
@@ -142,7 +150,7 @@ fn bench_comparison(c: &mut Criterion) {
         let runtime_code = load_contract_bytecode(config.name);
 
         // Generate calldata with NO_OF_ITERATIONS_TWO (120) iterations
-        let calldata = generate_calldata(config.name, NO_OF_ITERATIONS_TWO);
+        let calldata = generate_calldata("Benchmark", NO_OF_ITERATIONS_TWO);
 
         // Determine run count based on complexity
         let runs = config.runs();
@@ -175,12 +183,12 @@ fn bench_comparison(c: &mut Criterion) {
 criterion_group!(
     name = benches;
     config = Criterion::default()
-        // Reduce sample size to 10 for reasonable benchmark duration
-        // Each sample still includes warmup and multiple iterations
+        // Reduce sample size to 10 for quick benchmarking
         .sample_size(10)
-        // Spend 30 seconds measuring each benchmark
-        // This ensures statistical significance while keeping total time manageable
-        .measurement_time(std::time::Duration::from_secs(30))
+        // Spend only 3 seconds measuring each benchmark for faster iteration
+        .measurement_time(std::time::Duration::from_secs(3))
+        // Reduce warmup time to 1 second
+        .warm_up_time(std::time::Duration::from_secs(1))
         // Confidence level for statistical analysis (95%)
         .confidence_level(0.95)
         // Noise threshold - 5% change is considered significant
