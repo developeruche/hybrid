@@ -1,8 +1,7 @@
 use hybrid_vm::{
     evm::HybridEvm,
     revm::{
-        context::TxEnv,
-        db::BenchmarkDB,
+        db::{BenchmarkDB, BENCH_TARGET},
         handler::EthPrecompiles,
         inspector::NoOpInspector,
         primitives::{address, hex},
@@ -10,6 +9,7 @@ use hybrid_vm::{
         Context, ExecuteEvm, MainBuilder, MainContext,
     },
 };
+use revm::primitives::TxKind;
 use std::hint::black_box;
 
 pub fn run_with_hybrid_vm_evm_mode(contract_code: &str, runs: u64, calldata: &str) {
@@ -18,26 +18,19 @@ pub fn run_with_hybrid_vm_evm_mode(contract_code: &str, runs: u64, calldata: &st
     let raw_bytecode = Bytecode::new_raw(bytes.clone().into());
 
     let evm = Context::mainnet()
+        .with_db(BenchmarkDB::new_bytecode(raw_bytecode))
         .modify_tx_chained(|tx| {
             tx.caller = rich_acc_address;
             tx.data = hex::decode(calldata).unwrap().into();
+            tx.kind = TxKind::Call(BENCH_TARGET);
         })
-        .with_db(BenchmarkDB::new_bytecode(raw_bytecode))
         .build_mainnet_with_inspector(NoOpInspector {})
         .with_precompiles(EthPrecompiles::default());
 
     let mut h_evm = HybridEvm(evm);
 
-    let tx = TxEnv {
-        caller: rich_acc_address,
-        data: hex::decode(calldata).unwrap().into(),
-        ..Default::default()
-    };
-
     for _ in 0..runs {
-        let result = black_box(h_evm.transact(tx.clone())).unwrap();
-        println!("Result: {:?}", result);
+        let result = black_box(h_evm.replay()).unwrap();
         assert!(result.result.is_success(), "{:?}", result.result);
-        break;
     }
 }
