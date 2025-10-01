@@ -83,6 +83,19 @@ export default defineConfig({
             },
           ],
         },
+        {
+          text: "Benchmarks",
+          items: [
+            {
+              text: "Report",
+              link: "/protocols/benchs/report",
+            },
+            {
+              text: "Performance Analysis",
+              link: "/protocols/benchs/performance-analysis",
+            }
+          ],
+        },
       ],
     },
   ],

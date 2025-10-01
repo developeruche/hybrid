@@ -350,6 +350,32 @@ where
 
                             context.tstore(address, key, value);
                         }
+                        mini_evm_syscalls_ids::HOST_LOAD_ACCOUNT_DELEGATED => {
+                            let addr_1: u64 = emulator.cpu.xregs.read(10);
+                            let addr_2: u64 = emulator.cpu.xregs.read(11);
+                            let addr_3: u64 = emulator.cpu.xregs.read(12);
+
+                            let address = __3u64_to_address(addr_1, addr_2, addr_3);
+
+                            let output = context.load_account_delegated(address);
+
+                            let output_deserialized =
+                                bincode::serde::encode_to_vec(output, bincode::config::legacy())
+                                    .unwrap();
+
+                            emulator
+                                .cpu
+                                .xregs
+                                .write(10, output_deserialized.len() as u64);
+
+                            dram_write(
+                                &mut emulator,
+                                MINI_EVM_SYSCALLS_MEM_ADDR as u64,
+                                &output_deserialized,
+                            )
+                            .unwrap();
+                        }
+                        mini_evm_syscalls_ids::HOST_SELFDESTRUCT => {}
 
                         _ => {
                             println!("Mini EVM interpreter error: An unsupported sys_call was called: {}", t0);

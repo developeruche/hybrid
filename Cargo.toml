@@ -1,6 +1,6 @@
 [workspace]
 members = [ 
-    "bins/cargo-hybrid", 
+    "bins/cargo-hybrid", "bins/hybrid-bench", 
     "bins/hybrid-node", 
     "crates/hybrid-compile", 
     "crates/hybrid-ethereum",
