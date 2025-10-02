@@ -4,7 +4,7 @@ use crate::utils::deploy_riscv_bytecode;
 use alloy::primitives::hex;
 use anyhow::{anyhow, Result};
 use colored::Colorize;
-use hybrid_compile::run_contract_compilation;
+use hybrid_compile::{run_contract_compilation, run_contract_compilation_runtime};
 use include_dir::{include_dir, Dir};
 use indicatif::{ProgressBar, ProgressStyle};
 use std::{fs, path::PathBuf, process::Command};
@@ -222,7 +222,13 @@ pub fn build_contract(args: &BuildArgs, check_only: bool) -> Result<()> {
     pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
     // Use the compile crate's run_contract_compilation function
-    run_contract_compilation(&contract_root, check_only, pb, args.out.clone())?;
+    if args.bytecode_type == "deploy" {
+        run_contract_compilation(&contract_root, check_only, pb, args.out.clone())?;
+    } else if args.bytecode_type == "runtime" {
+        run_contract_compilation_runtime(&contract_root, check_only, pb, args.out.clone())?;
+    } else {
+        return Err(anyhow!("Invalid bytecode type: {}", args.bytecode_type));
+    }
 
     Ok(())
 }

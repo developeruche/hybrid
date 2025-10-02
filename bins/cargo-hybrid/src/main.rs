@@ -24,6 +24,7 @@ fn main() -> Result<()> {
             HybridSubcommands::Check => build_contract(
                 &BuildArgs {
                     out: "out".to_string(),
+                    bytecode_type: "deploy".to_string(),
                 },
                 true,
             )?,

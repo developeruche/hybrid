@@ -59,6 +59,10 @@ pub struct BuildArgs {
     /// Output directory for the compiled contract
     #[clap(long, default_value = "out")]
     pub out: String,
+
+    /// This is the type of bytecode that will be generated
+    #[clap(long, default_value = "deploy")]
+    pub bytecode_type: String,
 }
 
 #[derive(Args)]
