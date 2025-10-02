@@ -10,29 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      version: ${{ steps.get_version.outputs.version }}
-    steps:
-      - name: Get version from tag
-        id: get_version
-        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
-          prerelease: false
-
   build-release:
-    needs: create-release
     strategy:
       matrix:
         include:
@@ -52,6 +30,11 @@ jobs:
             os: macos-latest
             platform: darwin
             arch: arm64
+          # Uncomment if you want Windows builds
+          # - target: x86_64-pc-windows-msvc
+          #   os: windows-latest
+          #   platform: windows
+          #   arch: amd64
 
     runs-on: ${{ matrix.os }}
 
@@ -61,8 +44,9 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
+
+      - name: Add Rust target
+        run: rustup target add ${{ matrix.target }}
 
       - name: Install cross-compilation tools (Linux ARM64)
         if: matrix.target == 'aarch64-unknown-linux-gnu'
@@ -71,22 +55,24 @@ jobs:
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
       - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Strip binary (optional, smaller files)
         run: |
-          cargo build --release --target ${{ matrix.target }}
+          BIN_NAME="cargo-hybrid"
+          BIN_PATH="target/${{ matrix.target }}/release/$BIN_NAME"
+          if [ -f "$BIN_PATH" ]; then strip "$BIN_PATH" || true; fi
 
       - name: Create archive
         run: |
+          BIN_NAME="cargo-hybrid"
           cd target/${{ matrix.target }}/release
-          # Replace 'cargo-my-cli' with your actual binary name
-          tar czf cargo_my-cli_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz cargo-my-cli
-          mv cargo_my-cli_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz ../../../
+          tar czf ${BIN_NAME}_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz $BIN_NAME
+          mv ${BIN_NAME}_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz ../../../
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./cargo-hybrid_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./cargo_my-cli_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz
-          asset_name: cargo_my-cli_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz
-          asset_content_type: application/gzip
