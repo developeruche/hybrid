@@ -8,11 +8,6 @@ description: Deep dive into the hybrid virtual machine
 
 The Hybrid VM Core serves as the central orchestrator for a dual-VM execution environment in the Hybrid Framework. It manages the execution of both RISC-V bytecode (compiled from Rust smart contracts) and traditional EVM bytecode, providing seamless interoperability between the two execution environments through a unified interface.
 
-**Related Documentation:**
-- [Mini EVM Interpreter](./mini-evm-interpreter.md) - Details about the mini-EVM interpreter implementation
-- [RISC-V Emulation](./riscv-emulation.md) - RISC-V emulation specifics
-- [Syscall Interface](./syscall-interface.md) - Syscall bridge system
-
 ## Architecture Overview
 
 The Hybrid VM Core implements a dual-execution architecture where a single orchestrator routes execution to either the RISC-V emulator or the mini-EVM interpreter based on bytecode inspection.

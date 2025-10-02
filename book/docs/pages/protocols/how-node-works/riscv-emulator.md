@@ -6,10 +6,6 @@ description: Exploring the RISCV emulator
 
 The RISC-V emulation subsystem provides a complete RISC-V processor emulator that executes RISC-V bytecode compiled from Rust smart contracts within the Hybrid Framework. This emulator serves as one half of the dual-VM architecture, enabling Rust contracts to run alongside traditional EVM bytecode.
 
-**Related Documentation:**
-- [Hybrid VM Core](./hybrid-vm-core.md) - Overall dual-VM orchestration
-- [Syscall Interface](./syscall-interface.md) - RISC-V to EVM host interaction
-
 
 ## Architecture Overview
 
