@@ -213,13 +213,6 @@ pub fn build_contract(args: &BuildArgs, check_only: bool) -> Result<()> {
 
     // Set up the progress bar
     let pb = ProgressBar::new_spinner();
-    pb.set_style(
-        ProgressStyle::default_spinner()
-            .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
-            .template("{spinner:.green} {msg}")
-            .unwrap(),
-    );
-    pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
     // Use the compile crate's run_contract_compilation function
     if args.bytecode_type == "deploy" {

@@ -137,7 +137,7 @@ pub fn run_contract_compilation_runtime(
     info!("Compiling contract: {}", contract.name.ident);
 
     let runtime_bytecode = contract.compile_runtime()?;
-    let deploy_path = output_dir.join(format!("{}.bin", contract.name.package));
+    let deploy_path = output_dir.join(format!("{}.bin.runtime", contract.name.package));
 
     if is_check {
         pb.finish_with_message("Contract check completed successfully!".green().to_string());
