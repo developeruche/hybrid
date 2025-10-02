@@ -120,3 +120,37 @@ pub fn run_contract_compilation(
 
     Ok(())
 }
+
+pub fn run_contract_compilation_runtime(
+    contract_root: &Path,
+    is_check: bool,
+    pb: ProgressBar,
+    out: String,
+) -> Result<(), anyhow::Error> {
+    let output_dir = contract_root.join("out");
+    fs::create_dir_all(&output_dir)?;
+
+    let contract: Contract = obtain_contract_by_path(contract_root)
+        .ok_or(anyhow::anyhow!("contract fetch by path error"))?
+        .into();
+
+    info!("Compiling contract: {}", contract.name.ident);
+
+    let runtime_bytecode = contract.compile_runtime()?;
+    let deploy_path = output_dir.join(format!("{}.bin.runtime", contract.name.package));
+
+    if is_check {
+        pb.finish_with_message("Contract check completed successfully!".green().to_string());
+        println!("\n✅ {}\n", "Contract syntax check passed!".green().bold());
+    } else {
+        fs::write(deploy_path, runtime_bytecode)?;
+        pb.finish_with_message("Contract build completed successfully!".green().to_string());
+        println!(
+            "\n✅ {} to {}\n",
+            "Contract built successfully".green().bold(),
+            out.cyan()
+        );
+    }
+
+    Ok(())
+}

@@ -377,7 +377,7 @@ impl Contract {
     /// # Errors
     ///
     /// Returns an error if compilation fails or the generated binary cannot be read.
-    fn compile_runtime(&self) -> Result<Vec<u8>, anyhow::Error> {
+    pub fn compile_runtime(&self) -> Result<Vec<u8>, anyhow::Error> {
         debug!("Compiling runtime: {}", self.name.package);
 
         let path = self.path_str()?;

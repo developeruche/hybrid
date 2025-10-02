@@ -74,7 +74,7 @@ export default defineConfig({
               link: "/protocols/smart-contract-flow/overview",
             },
             {
-              text: "Memory Layout",
+              text: "Runtime and Memory Layout",
               link: "/protocols/smart-contract-flow/memory-layout-and-runtime",
             },
             {
