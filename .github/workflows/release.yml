@@ -1,78 +1,78 @@
-name: Release
+# name: Release
 
-on:
-  push:
-    tags:
-      - 'v*.*.*'
-  workflow_dispatch:
+# on:
+#   push:
+#     tags:
+#       - 'v*.*.*'
+#   workflow_dispatch:
 
-permissions:
-  contents: write
+# permissions:
+#   contents: write
 
-jobs:
-  build-release:
-    strategy:
-      matrix:
-        include:
-          - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
-            platform: linux
-            arch: amd64
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            platform: linux
-            arch: arm64
-          - target: x86_64-apple-darwin
-            os: macos-latest
-            platform: darwin
-            arch: amd64
-          - target: aarch64-apple-darwin
-            os: macos-latest
-            platform: darwin
-            arch: arm64
-          # Uncomment if you want Windows builds
-          # - target: x86_64-pc-windows-msvc
-          #   os: windows-latest
-          #   platform: windows
-          #   arch: amd64
+# jobs:
+#   build-release:
+#     strategy:
+#       matrix:
+#         include:
+#           - target: x86_64-unknown-linux-gnu
+#             os: ubuntu-latest
+#             platform: linux
+#             arch: amd64
+#           - target: aarch64-unknown-linux-gnu
+#             os: ubuntu-latest
+#             platform: linux
+#             arch: arm64
+#           - target: x86_64-apple-darwin
+#             os: macos-latest
+#             platform: darwin
+#             arch: amd64
+#           - target: aarch64-apple-darwin
+#             os: macos-latest
+#             platform: darwin
+#             arch: arm64
+#           # Uncomment if you want Windows builds
+#           # - target: x86_64-pc-windows-msvc
+#           #   os: windows-latest
+#           #   platform: windows
+#           #   arch: amd64
 
-    runs-on: ${{ matrix.os }}
+#     runs-on: ${{ matrix.os }}
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+#       - name: Install Rust
+#         uses: dtolnay/rust-toolchain@stable
 
-      - name: Add Rust target
-        run: rustup target add ${{ matrix.target }}
+#       - name: Add Rust target
+#         run: rustup target add ${{ matrix.target }}
 
-      - name: Install cross-compilation tools (Linux ARM64)
-        if: matrix.target == 'aarch64-unknown-linux-gnu'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu
+#       - name: Install cross-compilation tools (Linux ARM64)
+#         if: matrix.target == 'aarch64-unknown-linux-gnu'
+#         run: |
+#           sudo apt-get update
+#           sudo apt-get install -y gcc-aarch64-linux-gnu
 
-      - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+#       - name: Build
+#         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Strip binary (optional, smaller files)
-        run: |
-          BIN_NAME="cargo-hybrid"
-          BIN_PATH="target/${{ matrix.target }}/release/$BIN_NAME"
-          if [ -f "$BIN_PATH" ]; then strip "$BIN_PATH" || true; fi
+#       - name: Strip binary (optional, smaller files)
+#         run: |
+#           BIN_NAME="cargo-hybrid"
+#           BIN_PATH="target/${{ matrix.target }}/release/$BIN_NAME"
+#           if [ -f "$BIN_PATH" ]; then strip "$BIN_PATH" || true; fi
 
-      - name: Create archive
-        run: |
-          BIN_NAME="cargo-hybrid"
-          cd target/${{ matrix.target }}/release
-          tar czf ${BIN_NAME}_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz $BIN_NAME
-          mv ${BIN_NAME}_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz ../../../
+#       - name: Create archive
+#         run: |
+#           BIN_NAME="cargo-hybrid"
+#           cd target/${{ matrix.target }}/release
+#           tar czf ${BIN_NAME}_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz $BIN_NAME
+#           mv ${BIN_NAME}_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz ../../../
 
-      - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: ./cargo-hybrid_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#       - name: Upload Release Assets
+#         uses: softprops/action-gh-release@v1
+#         with:
+#           files: ./cargo-hybrid_${{ matrix.platform }}_${{ matrix.arch }}.tar.gz
+#         env:
+#           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
