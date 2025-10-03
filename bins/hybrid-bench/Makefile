@@ -1,7 +1,7 @@
 # Hybrid VM Benchmark Suite Makefile
 # Professional benchmark orchestration for REVM vs Hybrid VM comparison
 
-.PHONY: all bench bench-all bench-revm bench-hybrid bench-compare help clean report bench-fast bench-slow list
+.PHONY: all bench bench-all bench-revm bench-hybrid bench-riscv bench-compare bench-evm-vs-riscv bench-three-way help clean report bench-fast bench-slow list
 
 # Default target
 all: help
@@ -18,15 +18,30 @@ bench-revm:
 	@echo "🔧 Running REVM benchmarks..."
 	@cargo bench --bench vm_comparison revm
 
-# Run Hybrid VM benchmarks only
+# Run Hybrid VM (EVM mode) benchmarks only
 bench-hybrid:
-	@echo "⚡ Running Hybrid VM benchmarks..."
+	@echo "⚡ Running Hybrid VM (EVM mode) benchmarks..."
 	@cargo bench --bench vm_comparison hybrid_vm
+
+# Run Hybrid VM (RISC-V mode) benchmarks only
+bench-riscv:
+	@echo "🦀 Running Hybrid VM (RISC-V mode) benchmarks..."
+	@cargo bench --bench vm_comparison hybrid_vm_riscv
 
 # Run comparison benchmarks (side-by-side)
 bench-compare:
 	@echo "📊 Running comparison benchmarks..."
 	@cargo bench --bench vm_comparison comparison
+
+# Run EVM vs RISC-V mode comparison
+bench-evm-vs-riscv:
+	@echo "⚖️  Running EVM vs RISC-V mode comparison..."
+	@cargo bench --bench vm_comparison evm_vs_riscv
+
+# Run three-way comparison (REVM vs Hybrid EVM vs Hybrid RISC-V)
+bench-three-way:
+	@echo "🎯 Running three-way comparison (REVM vs EVM vs RISC-V)..."
+	@cargo bench --bench vm_comparison three_way_comparison
 
 # Quick benchmark with reduced sample size
 bench-fast:
@@ -82,23 +97,35 @@ report:
 list:
 	@echo "📋 Available benchmarks:"
 	@echo ""
-	@echo "  Fast Contracts (1000 runs):"
-	@echo "    - Push"
-	@echo "    - ERC20Transfer"
-	@echo "    - Factorial"
-	@echo "    - Fibonacci"
+	@echo "  EVM Mode Contracts:"
+	@echo "    Fast (10 runs):"
+	@echo "      - Push"
+	@echo "      - ERC20Transfer"
+	@echo "      - Factorial"
+	@echo "      - Fibonacci"
 	@echo ""
-	@echo "  Medium Contracts (500 runs):"
-	@echo "    - ERC20ApprovalTransfer"
-	@echo "    - ERC20Mint"
-	@echo "    - MstoreBench"
-	@echo "    - SstoreBench_no_opt"
+	@echo "    Medium (10 runs):"
+	@echo "      - ERC20ApprovalTransfer"
+	@echo "      - ERC20Mint"
+	@echo "      - MstoreBench"
+	@echo "      - SstoreBench_no_opt"
 	@echo ""
-	@echo "  Slow Contracts (100 runs):"
-	@echo "    - BubbleSort"
-	@echo "    - FactorialRecursive"
-	@echo "    - FibonacciRecursive"
-	@echo "    - ManyHashes"
+	@echo "    Slow (5 runs):"
+	@echo "      - BubbleSort"
+	@echo "      - ManyHashes"
+	@echo ""
+	@echo "  RISC-V Mode Contracts:"
+	@echo "    Fast (10 runs):"
+	@echo "      - ERC20Transfer"
+	@echo "      - Factorial"
+	@echo "      - Fibonacci"
+	@echo ""
+	@echo "    Medium (10 runs):"
+	@echo "      - ERC20ApprovalTransfer"
+	@echo "      - ERC20Mint"
+	@echo ""
+	@echo "    Slow (5 runs):"
+	@echo "      - ManyHashes"
 	@echo ""
 
 # Clean benchmark artifacts
@@ -126,8 +153,11 @@ help:
 	@echo "Main Targets:"
 	@echo "  make bench              - Run all benchmarks"
 	@echo "  make bench-revm         - Run REVM benchmarks only"
-	@echo "  make bench-hybrid       - Run Hybrid VM benchmarks only"
+	@echo "  make bench-hybrid       - Run Hybrid VM (EVM mode) benchmarks only"
+	@echo "  make bench-riscv        - Run Hybrid VM (RISC-V mode) benchmarks only"
 	@echo "  make bench-compare      - Run comparison benchmarks"
+	@echo "  make bench-evm-vs-riscv - Run EVM vs RISC-V mode comparison"
+	@echo "  make bench-three-way    - Run three-way comparison (REVM vs EVM vs RISC-V)"
 	@echo ""
 	@echo "Speed Variants:"
 	@echo "  make bench-fast         - Quick benchmark (reduced samples)"
@@ -156,5 +186,7 @@ help:
 	@echo "Examples:"
 	@echo "  make bench                              # Run all benchmarks"
 	@echo "  make bench-fast && make report          # Quick bench + open report"
+	@echo "  make bench-evm-vs-riscv                 # Compare EVM vs RISC-V modes"
+	@echo "  make bench-three-way                    # Full performance comparison"
 	@echo "  make baseline-save && make bench        # Save baseline & compare"
 	@echo ""

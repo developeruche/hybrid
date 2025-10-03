@@ -1,6 +1,9 @@
 use revm::primitives::hex;
 use sha3::{Digest, Keccak256};
-use std::{fs::File, io::Read};
+use std::{
+    fs::{self, File},
+    io::Read,
+};
 
 pub fn generate_calldata(function: &str, n: u64) -> String {
     let function_signature = format!("{function}(uint256)");
@@ -30,5 +33,18 @@ pub fn load_contract_bytecode(bench_name: &str) -> String {
     let mut file = File::open(path).unwrap();
     let mut contents = String::new();
     file.read_to_string(&mut contents).unwrap();
+
     contents
+}
+
+pub fn load_hybrid_contract_bytecode(bench_name: &str) -> String {
+    let path = format!(
+        "{}/src/assets/cargo-hybrid/{bench_name}.bin.runtime",
+        env!("CARGO_MANIFEST_DIR"),
+    );
+
+    let data = fs::read(path).unwrap();
+    let hybrid_contents = hex::encode(data);
+
+    hybrid_contents
 }

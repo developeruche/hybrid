@@ -1,0 +1,31 @@
+[package]
+name = "fibonacci"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[features]
+default = []
+deploy = []
+interface-only = []
+
+[dependencies]
+hybrid-derive = { git = "https://github.com/developeruche/hybrid.git" }
+hybrid-contract = { git = "https://github.com/developeruche/hybrid.git" }
+
+alloy-core = { version = "0.8.20", default-features = false }
+alloy-sol-types = { version = "0.8.20", default-features = false }
+
+[[bin]]
+name = "runtime"
+path = "src/lib.rs"
+
+[[bin]]
+name = "deploy"
+path = "src/lib.rs"
+required-features = ["deploy"]
+
+[profile.release]
+lto = true
+opt-level = "z"

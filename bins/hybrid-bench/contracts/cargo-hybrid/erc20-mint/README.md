@@ -1,0 +1,1 @@
+cargo +nightly-2025-01-07 build -r --lib -Z build-std=core,alloc --target riscv64imac-unknown-none-elf --bin runtime
