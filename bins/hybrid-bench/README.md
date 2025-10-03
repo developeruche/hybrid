@@ -1,16 +1,17 @@
 # Hybrid VM Benchmark Suite
 
-> Professional performance benchmarking for REVM vs Hybrid VM EVM mode comparison
+> Professional performance benchmarking for REVM vs Hybrid VM (EVM & RISC-V modes) comparison
 
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 [![Criterion](https://img.shields.io/badge/benchmark-criterion-blue.svg)](https://github.com/bheisler/criterion.rs)
 
 ## Overview
 
-This benchmark suite provides comprehensive, statistically-rigorous performance analysis comparing two Ethereum Virtual Machine implementations:
+This benchmark suite provides comprehensive, statistically-rigorous performance analysis comparing three execution modes:
 
 - **REVM**: The reference Rust EVM implementation
 - **Hybrid VM (EVM Mode)**: The hybrid virtual machine running in EVM-compatible mode
+- **Hybrid VM (RISC-V Mode)**: The hybrid virtual machine running native RISC-V bytecode
 
 ## Quick Start
 
@@ -41,34 +42,51 @@ make help           # See all available commands
 
 ## Features
 
-✅ **Comprehensive Coverage**: 12 smart contracts spanning various complexity levels  
+✅ **Comprehensive Coverage**: 12 EVM contracts + 6 RISC-V contracts spanning various complexity levels  
+✅ **Multi-Mode Comparison**: EVM vs RISC-V mode performance analysis  
 ✅ **Statistical Rigor**: Criterion.rs with confidence intervals and outlier detection  
 ✅ **Smart Iteration Counts**: Complexity-based run counts for optimal benchmark duration  
 ✅ **Professional Reports**: HTML reports with interactive charts and historical comparison  
 ✅ **CI/CD Ready**: Baseline comparison and regression detection  
-✅ **Well-Documented**: Extensive documentation and examples  
+✅ **Well-Documented**: Extensive documentation and examples
 
 ## Benchmarked Contracts
 
-### Fast Contracts (1000 runs)
+### EVM Mode Contracts
+
+#### Fast Contracts (10 runs)
 Lightweight operations with minimal computational overhead:
 - **Push** - Basic stack push operations
 - **ERC20Transfer** - Standard ERC20 token transfer
 - **Factorial** - Iterative factorial calculation
 - **Fibonacci** - Iterative Fibonacci sequence
 
-### Medium Complexity (500 runs)
+#### Medium Complexity (10 runs)
 Standard smart contract operations with moderate complexity:
 - **ERC20ApprovalTransfer** - ERC20 approval and transfer flow
 - **ERC20Mint** - ERC20 token minting operation
 - **MstoreBench** - Memory storage benchmarks
 - **SstoreBench_no_opt** - Storage operations without optimization
 
-### Slow Contracts (100 runs)
+#### Slow Contracts (5 runs)
 Computationally intensive operations:
 - **BubbleSort** - Sorting algorithm benchmark
-- **FactorialRecursive** - Recursive factorial (deep call stack)
-- **FibonacciRecursive** - Recursive Fibonacci (deep call stack)
+- **ManyHashes** - Intensive cryptographic hash operations
+
+### RISC-V Mode Contracts
+
+These contracts are compiled to native RISC-V bytecode and run on the Hybrid VM in RISC-V mode:
+
+#### Fast Contracts (10 runs)
+- **ERC20Transfer** - Standard ERC20 token transfer
+- **Factorial** - Iterative factorial calculation
+- **Fibonacci** - Iterative Fibonacci sequence
+
+#### Medium Complexity (10 runs)
+- **ERC20ApprovalTransfer** - ERC20 approval and transfer flow
+- **ERC20Mint** - ERC20 token minting operation
+
+#### Slow Contracts (5 runs)
 - **ManyHashes** - Intensive cryptographic hash operations
 
 ## Architecture
@@ -97,16 +115,17 @@ hybrid-bench/
 
 ```rust
 // Contract iteration count (passed to contract functions)
-NO_OF_ITERATIONS_TWO: u64 = 120
+NO_OF_ITERATIONS_ONE: u64 = 10   // RISC-V mode
+NO_OF_ITERATIONS_TWO: u64 = 120  // EVM mode
 
 // Benchmark runs per contract (based on complexity)
-Fast:    1000 runs
-Medium:  500 runs
-Slow:    100 runs
+Fast:    10 runs
+Medium:  10 runs
+Slow:    5 runs
 
 // Criterion configuration
 Sample Size:       10
-Measurement Time:  30 seconds
+Measurement Time:  3 seconds
 Confidence Level:  95%
 Noise Threshold:   5%
 ```
@@ -116,15 +135,18 @@ Noise Threshold:   5%
 ### Basic Benchmarking
 
 ```bash
-# Run all benchmarks
+# Run all benchmarks (including RISC-V)
 cargo bench --bench vm_comparison
 
 # Run specific VM benchmarks
-cargo bench --bench vm_comparison revm
-cargo bench --bench vm_comparison hybrid_vm
+cargo bench --bench vm_comparison revm           # REVM only
+cargo bench --bench vm_comparison hybrid_vm      # Hybrid VM (EVM mode)
+cargo bench --bench vm_comparison hybrid_vm_riscv # Hybrid VM (RISC-V mode)
 
-# Run comparison group
-cargo bench --bench vm_comparison comparison
+# Run comparison groups
+cargo bench --bench vm_comparison comparison        # EVM comparison
+cargo bench --bench vm_comparison evm_vs_riscv      # EVM vs RISC-V
+cargo bench --bench vm_comparison three_way_comparison # All three modes
 ```
 
 ### Contract-Specific Benchmarks
@@ -161,25 +183,30 @@ cargo bench --bench vm_comparison -- --baseline main
 ### Make Commands
 
 ```bash
-make bench              # Run all benchmarks
-make bench-revm         # REVM only
-make bench-hybrid       # Hybrid VM only
-make bench-compare      # Side-by-side comparison
-make bench-fast         # Quick benchmark (reduced samples)
-make bench-slow         # Thorough benchmark (increased samples)
-make bench-bubblesort   # Specific contract
-make bench-erc20        # All ERC20 contracts
-make baseline-save      # Save baseline
-make baseline-compare   # Compare with baseline
-make report             # Open HTML report
-make clean              # Remove artifacts
-make list               # List all contracts
-make help               # Show all commands
+make bench                  # Run all benchmarks
+make bench-revm             # REVM only
+make bench-hybrid           # Hybrid VM (EVM mode) only
+make bench-riscv            # Hybrid VM (RISC-V mode) only
+make bench-compare          # Side-by-side EVM comparison
+make bench-evm-vs-riscv     # EVM vs RISC-V mode comparison
+make bench-three-way        # Three-way comparison (REVM vs EVM vs RISC-V)
+make bench-fast             # Quick benchmark (reduced samples)
+make bench-slow             # Thorough benchmark (increased samples)
+make bench-bubblesort       # Specific contract
+make bench-erc20            # All ERC20 contracts
+make baseline-save          # Save baseline
+make baseline-compare       # Compare with baseline
+make report                 # Open HTML report
+make clean                  # Remove artifacts
+make list                   # List all contracts
+make help                   # Show all commands
 ```
 
 ## Understanding Results
 
 ### Console Output
+
+#### EVM Mode Comparison
 ```
 revm_BubbleSort     time:   [45.123 ms 45.456 ms 45.789 ms]
                            change: [+2.1% +2.5% +2.9%] (p = 0.00 < 0.05)
@@ -188,6 +215,23 @@ revm_BubbleSort     time:   [45.123 ms 45.456 ms 45.789 ms]
 hybrid_BubbleSort   time:   [43.234 ms 43.567 ms 43.901 ms]
                            change: [-5.2% -4.9% -4.5%] (p = 0.00 < 0.05)
                            Performance has improved.
+```
+
+#### EVM vs RISC-V Mode Comparison
+```
+evm_mode/Factorial    time:   [1.234 ms 1.256 ms 1.278 ms]
+
+riscv_mode/Factorial  time:   [0.987 ms 1.012 ms 1.037 ms]
+                             change: [-21.3% -19.4% -17.5%] (p = 0.00 < 0.05)
+                             RISC-V mode is faster!
+```
+
+#### Three-Way Comparison
+```
+revm/ERC20Transfer        time:   [2.123 ms 2.145 ms 2.167 ms]
+hybrid_evm/ERC20Transfer  time:   [2.234 ms 2.256 ms 2.278 ms]
+hybrid_riscv/ERC20Transfer time:   [1.789 ms 1.812 ms 1.835 ms]
+                                  RISC-V mode is 19% faster!
 ```
 
 **Reading the output:**
@@ -248,217 +292,4 @@ cargo bench --bench vm_comparison Push Factorial
 cargo bench --bench vm_comparison --no-run
 ```
 
-## CI/CD Integration
-
-### GitHub Actions Example
-
-```yaml
-name: Benchmark
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  benchmark:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          
-      - name: Run benchmarks
-        run: |
-          cd bins/hybrid-bench
-          cargo bench --bench vm_comparison -- --output-format bencher | tee output.txt
-          
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: 'cargo'
-          output-file-path: bins/hybrid-bench/output.txt
-```
-
-### Automated Baseline Comparison
-
-```bash
-# In CI pipeline
-git checkout main
-cargo bench --bench vm_comparison -- --save-baseline main
-
-git checkout feature-branch
-cargo bench --bench vm_comparison -- --baseline main
-```
-
-## Troubleshooting
-
-### Issue: Benchmarks Take Too Long
-
-**Solution:**
-```bash
-# Use fast mode
-make bench-fast
-
-# Or benchmark specific contracts
-cargo bench --bench vm_comparison Push Factorial ERC20Transfer
-```
-
-### Issue: Inconsistent Results
-
-**Causes:**
-- High system load
-- Thermal throttling
-- Background processes
-- CPU frequency scaling
-
-**Solutions:**
-- Close unnecessary applications
-- Ensure adequate cooling
-- Disable CPU frequency scaling
-- Increase sample size: `make bench-slow`
-
-### Issue: Out of Memory
-
-**Solution:**
-```bash
-# Benchmark contracts individually
-make bench-bubblesort
-make bench-erc20
-make bench-factorial
-```
-
-### Issue: Build Errors
-
-**Solution:**
-```bash
-# Clean and rebuild
-cargo clean
-cargo check --package hybrid-bench --benches
-cargo bench --bench vm_comparison --no-run
-```
-
-## Development
-
-### Adding New Contracts
-
-1. **Add bytecode file:**
-   ```bash
-   cp NewContract.bin-runtime src/assets/
-   ```
-
-2. **Update benchmark configuration:**
-   ```rust
-   // In benches/vm_comparison.rs
-   const CONTRACTS: &[ContractBenchConfig] = &[
-       // ... existing contracts ...
-       ContractBenchConfig::new("NewContract", ContractComplexity::Medium),
-   ];
-   ```
-
-3. **Run benchmark:**
-   ```bash
-   cargo bench --bench vm_comparison NewContract
-   ```
-
-### Modifying Benchmark Parameters
-
-Edit `benches/vm_comparison.rs`:
-
-```rust
-criterion_group!(
-    name = benches;
-    config = Criterion::default()
-        .sample_size(10)              // Number of samples
-        .measurement_time(Duration::from_secs(30))  // Time per benchmark
-        .confidence_level(0.95)       // Statistical confidence
-        .noise_threshold(0.05);       // 5% significance threshold
-    targets = bench_revm, bench_hybrid_vm, bench_comparison
-);
-```
-
-### Modifying Iteration Counts
-
-Edit `src/lib.rs`:
-
-```rust
-pub const NO_OF_ITERATIONS_TWO: u64 = 120;  // Contract iterations
-```
-
-Edit `benches/vm_comparison.rs`:
-
-```rust
-impl ContractBenchConfig {
-    const fn runs(&self) -> u64 {
-        match self.complexity {
-            ContractComplexity::Fast => 1000,    // Fast contracts
-            ContractComplexity::Medium => 500,   // Medium contracts
-            ContractComplexity::Slow => 100,     // Slow contracts
-        }
-    }
-}
-```
-
-## Documentation
-
-- **README.md** (this file) - Overview and quick reference
-- **BENCHMARK.md** - Detailed documentation and methodology
-- **QUICKSTART.md** - 60-second getting started guide
-- **Makefile** - Build automation reference
-- **run_benchmarks.sh** - Professional runner with optimizations
-
-## Dependencies
-
-```toml
-[dependencies]
-revm = { workspace = true }
-sha3 = "0.10.8"
-hybrid-vm = { workspace = true }
-hybrid-ethereum = { workspace = true }
-
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports"] }
-```
-
-## Requirements
-
-- **Rust**: 1.70 or later
-- **Cargo**: Latest stable
-- **Disk Space**: ~500MB for reports
-- **Time**: 15-30 minutes for full benchmark suite
-
-## Contributing
-
-We welcome contributions! When adding benchmarks:
-
-1. Follow the existing code style
-2. Choose appropriate complexity classification
-3. Ensure contracts are deterministic
-4. Document any special requirements
-5. Test locally before submitting PR
-6. Update documentation as needed
-
-## License
-
-MIT License - See [LICENSE](../../LICENSE) file in repository root.
-
-## Credits
-
-- Built with [Criterion.rs](https://github.com/bheisler/criterion.rs)
-- Part of the [Hybrid VM](https://github.com/developeruche/hybrid) project
-- Maintained by the Hybrid VM team
-
-## Support
-
-- 📚 [Full Documentation](./BENCHMARK.md)
-- 🚀 [Quick Start Guide](./QUICKSTART.md)
-- 💬 GitHub Issues for bug reports
-- 🎯 GitHub Discussions for questions
-
----
-
-**Pro Tip**: Run `make bench-fast && make report` for quick iteration during development! ⚡
+**Pro Tip**: Run `make bench-evm-vs-riscv && make report` to see EVM vs RISC-V performance comparison! ⚡

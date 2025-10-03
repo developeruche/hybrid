@@ -103,12 +103,24 @@ run_benchmark() {
             cargo bench --bench vm_comparison revm
             ;;
         hybrid)
-            info "Running Hybrid VM benchmarks..."
+            info "Running Hybrid VM (EVM mode) benchmarks..."
             cargo bench --bench vm_comparison hybrid_vm
+            ;;
+        riscv)
+            info "Running Hybrid VM (RISC-V mode) benchmarks..."
+            cargo bench --bench vm_comparison hybrid_vm_riscv
             ;;
         comparison)
             info "Running comparison benchmarks..."
             cargo bench --bench vm_comparison comparison
+            ;;
+        evm-vs-riscv)
+            info "Running EVM vs RISC-V mode comparison..."
+            cargo bench --bench vm_comparison evm_vs_riscv
+            ;;
+        three-way)
+            info "Running three-way comparison (REVM vs Hybrid EVM vs Hybrid RISC-V)..."
+            cargo bench --bench vm_comparison three_way_comparison
             ;;
         fast)
             info "Running fast benchmarks (reduced samples)..."
@@ -165,14 +177,20 @@ usage() {
     echo "Benchmarks:"
     echo "  all                 Run all benchmarks (default)"
     echo "  revm                Run REVM benchmarks only"
-    echo "  hybrid              Run Hybrid VM benchmarks only"
+    echo "  hybrid              Run Hybrid VM (EVM mode) benchmarks only"
+    echo "  riscv               Run Hybrid VM (RISC-V mode) benchmarks only"
     echo "  comparison          Run comparison benchmarks"
+    echo "  evm-vs-riscv        Run EVM vs RISC-V mode comparison"
+    echo "  three-way           Run three-way comparison (REVM vs EVM vs RISC-V)"
     echo "  <CONTRACT>          Run specific contract (e.g., BubbleSort)"
     echo ""
     echo "Examples:"
     echo "  $0                            # Run all benchmarks"
     echo "  $0 --fast                     # Quick benchmark"
     echo "  $0 revm                       # REVM only"
+    echo "  $0 riscv                      # RISC-V mode only"
+    echo "  $0 evm-vs-riscv               # EVM vs RISC-V comparison"
+    echo "  $0 three-way                  # Complete comparison"
     echo "  $0 BubbleSort                 # Specific contract"
     echo "  $0 --thorough comparison      # Thorough comparison"
     echo ""

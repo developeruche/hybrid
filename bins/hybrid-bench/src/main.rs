@@ -18,14 +18,14 @@ fn main() {
         "Push",
         "SstoreBench_no_opt",
     ];
-    
+
     let hybrid_contracts = [
         "ERC20ApprovalTransfer",
         "ERC20Mint",
         "ERC20Transfer",
         "Factorial",
         "Fibonacci",
-        "ManyHashes"
+        "ManyHashes",
     ];
 
     for contract in contracts {
@@ -36,7 +36,7 @@ fn main() {
         run_with_revm(&runtime_code, RUNS, &calldata);
         run_with_hybrid_vm(&runtime_code, RUNS, &calldata);
     }
-    
+
     for contract in hybrid_contracts {
         let hybrid_runtime_code = load_hybrid_contract_bytecode(contract);
         let calldata = generate_calldata("Benchmark", NO_OF_ITERATIONS_ONE);
