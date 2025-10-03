@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use hybrid_bench::{
-    hybrid_vm_bench::run_with_hybrid_vm_evm_mode,
+    hybrid_vm_bench::run_with_hybrid_vm,
     revm_bench::run_with_revm,
     utils::{generate_calldata, load_contract_bytecode},
     NO_OF_ITERATIONS_ONE, NO_OF_ITERATIONS_TWO,
@@ -125,7 +125,7 @@ fn bench_hybrid_vm(c: &mut Criterion) {
             &(runtime_code.as_str(), calldata.as_str(), runs),
             |b, &(code, data, runs)| {
                 b.iter(|| {
-                    run_with_hybrid_vm_evm_mode(black_box(code), black_box(runs), black_box(data))
+                    run_with_hybrid_vm(black_box(code), black_box(runs), black_box(data))
                 });
             },
         );
@@ -170,7 +170,7 @@ fn bench_comparison(c: &mut Criterion) {
             &(runtime_code.as_str(), calldata.as_str(), runs),
             |b, &(code, data, runs)| {
                 b.iter(|| {
-                    run_with_hybrid_vm_evm_mode(black_box(code), black_box(runs), black_box(data))
+                    run_with_hybrid_vm(black_box(code), black_box(runs), black_box(data))
                 });
             },
         );

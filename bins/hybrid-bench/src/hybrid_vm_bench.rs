@@ -12,7 +12,7 @@ use hybrid_vm::{
 use revm::primitives::TxKind;
 use std::hint::black_box;
 
-pub fn run_with_hybrid_vm_evm_mode(contract_code: &str, runs: u64, calldata: &str) {
+pub fn run_with_hybrid_vm(contract_code: &str, runs: u64, calldata: &str) {
     let rich_acc_address = address!("1000000000000000000000000000000000000000");
     let bytes = hex::decode(contract_code).unwrap();
     let raw_bytecode = Bytecode::new_raw(bytes.clone().into());
